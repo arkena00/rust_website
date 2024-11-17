@@ -53,8 +53,8 @@ impl Plugin for CanPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_plugins(MaterialPlugin::<CanMaterial>::default())
-            .add_systems(Startup, (setup, setup_animation.before(animate_targets)))
-            .add_systems(Update, (update, animate));
+            .add_systems(Startup, (setup))
+            .add_systems(Update, (update, scroll_animate, setup_animation.before(animate_targets)));
     }
 }
 
@@ -66,6 +66,8 @@ fn setup(
 ) {
     let can_mesh: Handle<Mesh> = asset_server.load("meshes/can.glb#Mesh0/Primitive0");
 
+    let test: Handle<Scene> = asset_server.load(GltfAssetLabel::Scene(0).from_asset("animations/can.glb"));
+
     let animation_intro = [[
         vec3(-6., 2., 0.),
         vec3(12., 8., 0.),
@@ -74,7 +76,7 @@ fn setup(
 
     ]];
 
-    // Make a CubicCurve
+
     let bezier = CubicBezier::new(animation_intro).to_curve();
 
     commands.spawn((MaterialMeshBundle {
@@ -91,28 +93,26 @@ fn setup(
     ));
 
 
+    let clip = asset_server.load( GltfAssetLabel::Animation(0).from_asset("animations/can.glb") );
+
     let mut graph = AnimationGraph::new();
     let animations = graph
         .add_clips(
             [
-                GltfAssetLabel::Animation(0).from_asset("animations/can.glb"),
+                clip,
             ]
-                .into_iter()
-                .map(|path| asset_server.load(path)),
+                .into_iter(),
             1.0,
             graph.root,
         )
         .collect();
 
-    // Insert a resource with the current scene information
     let graph = graphs.add(graph);
     commands.insert_resource(Animations {
         animations,
         graph: graph.clone(),
     });
 
-
-    // Fox
     commands.spawn(SceneBundle {
         scene: asset_server.load(GltfAssetLabel::Scene(0).from_asset("animations/can.glb")),
         ..default()
@@ -135,10 +135,10 @@ fn update(mut cubes: Query<(&mut Transform, &Rotatable)>
     }
 }
 
-fn animate(time: Res<Time>,
-           mut site: ResMut<SiteRes>,
-           mut query: Query<(&mut Transform, &Curve)>,
-           mut gizmos: Gizmos) {
+fn scroll_animate(time: Res<Time>,
+                  mut site: ResMut<SiteRes>,
+                  mut query: Query<(&mut Transform, &Curve)>,
+                  mut gizmos: Gizmos) {
     let t = (time.elapsed_seconds().sin() + 1.) / 2.;
 
     for (mut transform, cubic_curve) in &mut query {
@@ -156,7 +156,23 @@ fn animate(time: Res<Time>,
 fn setup_animation(
     mut commands: Commands,
     animations: Res<Animations>,
-
+    mut players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>,
 ) {
+    for (entity, mut player) in &mut players {
+        let mut transitions = AnimationTransitions::new();
+
+        // Make sure to start the animation via the `AnimationTransitions`
+        // component. The `AnimationTransitions` component wants to manage all
+        // the animations and will get confused if the animations are started
+        // directly via the `AnimationPlayer`.
+        transitions
+            .play(&mut player, animations.animations[0], Duration::ZERO)
+            .repeat();
+
+        commands
+            .entity(entity)
+            .insert(animations.graph.clone())
+            .insert(transitions);
+    }
 
 }

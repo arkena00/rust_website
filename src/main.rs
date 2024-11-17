@@ -155,14 +155,13 @@ fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
 }
 
 fn debug_text(
-    mut scroll_event: EventReader<ScrollEvent>,
+    site: ResMut<SiteRes>,
     mut q: Query<&mut Text, With<DebugText>>,
 ) {
     let mut text = q.single_mut();
 
-    for ev in scroll_event.read() {
-        text.sections[0].value = format!("{:.1}", ev.0);
-    }
+    text.sections[0].value = format!("{:.1}", site.scroll);
+
 }
 
 #[derive(Component)]
@@ -170,12 +169,10 @@ struct DebugText;
 
 
 fn camera_move(
-    mut scroll_event: EventReader<ScrollEvent>,
+    site: ResMut<SiteRes>,
     mut query: Query<(&SiteCamera, &mut Transform)>,
 ) {
     let (camera, mut transform) = query.single_mut();
 
-    for ev in scroll_event.read() {
-        // transform.translation.y = ev.0;
-    }
+    transform.translation.y = site.scroll;
 }

@@ -27,6 +27,7 @@ bevy = { version = "0.14.2", default-features = false, features = [
     "tonemapping_luts",
     "smaa_luts",
     "default_font",
+    "vorbis",
     "webgl2",
     "sysinfo_plugin",
 ] }
