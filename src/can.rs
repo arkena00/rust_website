@@ -8,7 +8,14 @@
     },
 };
 
+use bevy::{
+    animation::{animate_targets, RepeatAnimation},
+    pbr::CascadeShadowConfigBuilder,
+};
+
+
 use std::f32::consts::TAU;
+use std::time::Duration;
 use bevy::color::palettes::basic::WHITE;
 use bevy::math::vec3;
 use crate::component::{Rotatable};
@@ -26,6 +33,14 @@ struct CanMaterial {
     color_texture: Option<Handle<Image>>,
 }
 
+#[derive(Resource)]
+struct Animations {
+    animations: Vec<AnimationNodeIndex>,
+    #[allow(dead_code)]
+    graph: Handle<AnimationGraph>,
+}
+
+
 impl Material for CanMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/can.wgsl".into()
@@ -38,7 +53,7 @@ impl Plugin for CanPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_plugins(MaterialPlugin::<CanMaterial>::default())
-            .add_systems(Startup, setup)
+            .add_systems(Startup, (setup, setup_animation.before(animate_targets)))
             .add_systems(Update, (update, animate));
     }
 }
@@ -46,6 +61,7 @@ impl Plugin for CanPlugin {
 fn setup(
     mut commands: Commands,
     mut materials: ResMut<Assets<CanMaterial>>,
+    mut graphs: ResMut<Assets<AnimationGraph>>,
     asset_server: Res<AssetServer>,
 ) {
     let can_mesh: Handle<Mesh> = asset_server.load("meshes/can.glb#Mesh0/Primitive0");
@@ -73,6 +89,37 @@ fn setup(
     }, Rotatable { speed: 0.3 }
         , Curve(bezier)
     ));
+
+
+    let mut graph = AnimationGraph::new();
+    let animations = graph
+        .add_clips(
+            [
+                GltfAssetLabel::Animation(0).from_asset("animations/can.glb"),
+            ]
+                .into_iter()
+                .map(|path| asset_server.load(path)),
+            1.0,
+            graph.root,
+        )
+        .collect();
+
+    // Insert a resource with the current scene information
+    let graph = graphs.add(graph);
+    commands.insert_resource(Animations {
+        animations,
+        graph: graph.clone(),
+    });
+
+
+    // Fox
+    commands.spawn(SceneBundle {
+        scene: asset_server.load(GltfAssetLabel::Scene(0).from_asset("animations/can.glb")),
+        ..default()
+    });
+
+
+
 }
 
 fn update(mut cubes: Query<(&mut Transform, &Rotatable)>
@@ -104,3 +151,12 @@ fn animate(time: Res<Time>,
     }
 }
 
+
+
+fn setup_animation(
+    mut commands: Commands,
+    animations: Res<Animations>,
+
+) {
+
+}
