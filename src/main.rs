@@ -1,6 +1,7 @@
 mod background;
 mod can;
 mod component;
+mod postprocess;
 
 use std::f32::consts::TAU;
 use std::time::Duration;
@@ -8,6 +9,7 @@ use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 use bevy::window::WindowResized;
 use background::*;
+use postprocess::*;
 use can::CanPlugin;
 use component::*;
 
@@ -46,11 +48,13 @@ fn main() {
                 mouse_scroll
                 , camera_move
                 , debug_text
+                , update_settings
             ))
-            // .add_plugins(BackgroundPlugin {})
+            .add_plugins(BackgroundPlugin {})
             .add_plugins(AudioPlugin)
 
             .add_plugins(CanPlugin {})
+            .add_plugins(PostProcessPlugin {})
             .add_event::<ScrollEvent>()
             .run();
 }
@@ -76,9 +80,15 @@ fn setup(
 
     // camera
     commands.spawn((SiteCamera, Camera3dBundle {
-        transform: Transform::from_xyz(0.0, 0.0, 50.0).looking_at(Vec3::ZERO, Vec3::Y),
+        transform: Transform::from_xyz(0.0, 0.0, 20.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
+    }, PostProcessSettings {
+    intensity: 0.02,
+    ..default()
     }));
+
+
+
 
 
     // text
@@ -175,4 +185,22 @@ fn camera_move(
     let (camera, mut transform) = query.single_mut();
 
     transform.translation.y = site.scroll;
+}
+
+
+
+fn update_settings(mut settings: Query<&mut PostProcessSettings>, time: Res<Time>) {
+    for mut setting in &mut settings {
+        let mut intensity = time.elapsed_seconds().sin();
+        // Make it loop periodically
+        intensity = intensity.sin();
+        // Remap it to 0..1 because the intensity can't be negative
+        intensity = intensity * 0.5 + 0.5;
+        // Scale it to a more reasonable level
+        intensity *= 0.015;
+
+        // Set the intensity.
+        // This will then be extracted to the render world and uploaded to the gpu automatically by the [`UniformComponentPlugin`]
+        setting.intensity = intensity;
+    }
 }

@@ -52,7 +52,7 @@ fn setup(
         transform: Transform::from_xyz(0.0, 0.0, 0.0),
         material: materials.add(BackgroundMaterial {
             color: LinearRgba::WHITE,
-            color_texture: Some(asset_server.load("image.png")),
+            color_texture: Some(asset_server.load("can.png")),
         }),
         ..default()
     });

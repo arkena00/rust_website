@@ -18,19 +18,38 @@ use std::f32::consts::TAU;
 use std::time::Duration;
 use bevy::color::palettes::basic::WHITE;
 use bevy::math::vec3;
+use bevy::render::extract_component::{ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin};
+use bevy::render::render_resource::ShaderType;
 use crate::component::{Rotatable};
 use crate::{ScrollEvent, SiteRes};
 
+use bevy::prelude::*;
+use bevy::render::render_resource::{Shader};
+
 #[derive(Component)]
 struct Curve(CubicCurve<Vec3>);
+
+#[derive(Component, Default, Clone, Copy, ExtractComponent, ShaderType)]
+struct TimeUniform {
+    intensity: f32,
+    // WebGL2 structs must be 16 byte aligned.
+    #[cfg(feature = "webgl2")]
+    _webgl2_padding: Vec3,
+}
+
 
 #[derive(Asset, TypePath, AsBindGroup, Clone)]
 struct CanMaterial {
     #[uniform(0)]
     color: LinearRgba,
-    #[texture(1)]
-    #[sampler(2)]
-    color_texture: Option<Handle<Image>>,
+    #[uniform(1)]
+    scroll: f32,
+    #[texture(2)]
+    #[sampler(3)]
+    color_texture0: Option<Handle<Image>>,
+    #[texture(4)]
+    #[sampler(5)]
+    color_texture1: Option<Handle<Image>>,
 }
 
 #[derive(Resource)]
@@ -53,8 +72,13 @@ impl Plugin for CanPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_plugins(MaterialPlugin::<CanMaterial>::default())
+            //.add_plugins(UniformComponentPlugin::<TimeUniform>::default())
             .add_systems(Startup, (setup))
-            .add_systems(Update, (update, scroll_animate, setup_animation.before(animate_targets)));
+            .add_systems(Update, (
+                update,
+                //update_time_uniform,
+                scroll_animate,
+                setup_animation.before(animate_targets)));
     }
 }
 
@@ -64,6 +88,15 @@ fn setup(
     mut graphs: ResMut<Assets<AnimationGraph>>,
     asset_server: Res<AssetServer>,
 ) {
+    // Insert the TimeUniform component on an entity
+    /*    commands.spawn(PbrBundle {
+            mesh: Default::default(),
+            transform: Transform::default(),
+            ..Default::default()
+        }).insert(TimeUniform{ intensity: 0.0 });
+
+    */
+
     let can_mesh: Handle<Mesh> = asset_server.load("meshes/can.glb#Mesh0/Primitive0");
 
     let test: Handle<Scene> = asset_server.load(GltfAssetLabel::Scene(0).from_asset("animations/can.glb"));
@@ -83,13 +116,15 @@ fn setup(
         mesh: can_mesh,
         material: materials.add(CanMaterial {
             color: LinearRgba::WHITE,
-            color_texture: Some(asset_server.load("image.png")),
+            scroll: 1.0,
+            color_texture0: Some(asset_server.load("textures/can0.png")),
+            color_texture1: Some(asset_server.load("textures/can1.png")),
         }),
 
         transform: Transform::from_xyz(0.0, 0.5, 0.0),
         ..default()
     }, Rotatable { speed: 0.3 }
-        , Curve(bezier)
+                    , Curve(bezier)
     ));
 
 
@@ -174,5 +209,5 @@ fn setup_animation(
             .insert(animations.graph.clone())
             .insert(transitions);
     }
-
 }
+
