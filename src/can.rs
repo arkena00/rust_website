@@ -21,12 +21,10 @@ use bevy::math::vec3;
 use bevy::render::extract_component::{ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin};
 use bevy::render::render_resource::ShaderType;
 use crate::component::{Rotatable};
-use crate::{ScrollEvent};
+use crate::{nws, ScrollEvent};
 
 use bevy::prelude::*;
 use bevy::render::render_resource::{Shader};
-use crate::nws::*;
-use crate::site::nws;
 
 #[derive(Component)]
 pub struct CanTag;
@@ -174,7 +172,7 @@ fn setup(
 }
 
 fn update(
-    site: ResMut<nws::Site>,
+    site: ResMut<nws::site::Site>,
     timer: Res<Time>,
     mut query: Query<(&mut Transform, &CanTag)>,
     mut scroll_event: EventReader<ScrollEvent>)
@@ -198,7 +196,7 @@ fn update(
 }
 
 fn scroll_animate(time: Res<Time>,
-                  mut site: ResMut<nws::Site>,
+                  mut site: ResMut<nws::site::Site>,
                   mut query: Query<(&mut Transform, &Curve)>,
                   mut gizmos: Gizmos) {
     let t = (time.elapsed_seconds().sin() + 1.) / 2.;

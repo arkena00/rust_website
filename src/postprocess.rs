@@ -23,8 +23,7 @@
         RenderApp,
     },
 };
-
-use crate::site::nws;
+use crate::nws;
 
 /// It is generally encouraged to set up post processing effects as a plugin
 pub struct PostProcessPlugin;
@@ -348,7 +347,7 @@ fn rotate(time: Res<Time>, mut query: Query<&mut Transform, With<Rotates>>) {
 // Change the intensity over time to show that the effect is controlled from the main world
 fn update_settings(mut settings: Query<&mut PostProcessSettings>
                    , time: Res<Time>
-                    , site: ResMut<nws::Site>) {
+                    , site: ResMut<nws::site::Site>) {
     for mut setting in &mut settings {
         let mut intensity = time.elapsed_seconds().sin();
         // Make it loop periodically

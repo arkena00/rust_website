@@ -2,18 +2,14 @@ mod background;
 mod can;
 mod component;
 mod postprocess;
-mod site;
+mod nws;
 
-use std::f32::consts::TAU;
-use std::time::Duration;
+use background::*;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
-use bevy::window::WindowResized;
-use background::*;
-use postprocess::*;
 use can::CanPlugin;
 use component::*;
-use site::*;
+use postprocess::*;
 
 use bevy_kira_audio::prelude::*;
 
@@ -35,13 +31,14 @@ fn main() {
                 }),
                 ..default()
             }))
-            .insert_resource(nws::Site::default())
+            .insert_resource(nws::site::Site::default())
             .add_systems(Startup, (setup, start_background_audio))
             .add_systems(Update, (
                 mouse_scroll
                 , camera_move
                 , debug_text
             ))
+            .add_plugins(nws::content::ContentPlugin {})
             .add_plugins(BackgroundPlugin {})
             .add_plugins(AudioPlugin)
 
@@ -55,7 +52,7 @@ fn main() {
 struct ColorText;
 
 fn setup(
-    mut site: ResMut<nws::Site>,
+    mut site: ResMut<nws::site::Site>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -133,7 +130,7 @@ fn setup(
 
 
 fn mouse_scroll(
-    mut site: ResMut<nws::Site>,
+    mut site: ResMut<nws::site::Site>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut scroll_event: EventWriter<ScrollEvent>,
 ) {
@@ -156,7 +153,7 @@ fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
 }
 
 fn debug_text(
-    site: ResMut<nws::Site>,
+    site: ResMut<nws::site::Site>,
     mut q: Query<&mut Text, With<DebugText>>,
 ) {
     let mut text = q.single_mut();
@@ -170,7 +167,7 @@ struct DebugText;
 
 
 fn camera_move(
-    site: ResMut<nws::Site>,
+    site: ResMut<nws::site::Site>,
     mut query: Query<(&SiteCamera, &mut Transform)>,
 ) {
     let (camera, mut transform) = query.single_mut();
