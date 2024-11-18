@@ -83,7 +83,7 @@ fn setup(
         transform: Transform::from_xyz(0.0, 0.0, 20.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
     }, PostProcessSettings {
-    intensity: 0.02,
+    intensity: 0.1,
     ..default()
     }));
 

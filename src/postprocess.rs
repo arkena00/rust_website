@@ -25,6 +25,7 @@
 };
 
 
+/// It is generally encouraged to set up post processing effects as a plugin
 pub struct PostProcessPlugin;
 
 impl Plugin for PostProcessPlugin {
@@ -41,7 +42,7 @@ impl Plugin for PostProcessPlugin {
             // This plugin will prepare the component for the GPU by creating a uniform buffer
             // and writing the data to that buffer every frame.
             UniformComponentPlugin::<PostProcessSettings>::default(),
-        ));
+        )).add_systems(Update, (rotate, update_settings));
 
         // We need to get the render app from the main app
         let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
@@ -240,7 +241,7 @@ impl FromWorld for PostProcessPipeline {
         let sampler = render_device.create_sampler(&SamplerDescriptor::default());
 
         // Get the shader handle
-        let shader = world.load_asset("shaders/chroma.wgsl");
+        let shader = world.load_asset("shaders/postprocess.wgsl");
 
         let pipeline_id = world
             .resource_mut::<PipelineCache>()
@@ -285,4 +286,77 @@ pub struct PostProcessSettings {
     // WebGL2 structs must be 16 byte aligned.
     #[cfg(feature = "webgl2")]
     _webgl2_padding: Vec3,
+}
+
+/// Set up a simple 3D scene
+fn setup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    // camera
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, 5.0))
+                .looking_at(Vec3::default(), Vec3::Y),
+            camera: Camera {
+                clear_color: Color::WHITE.into(),
+                ..default()
+            },
+            ..default()
+        },
+        // Add the setting to the camera.
+        // This component is also used to determine on which camera to run the post processing effect.
+        PostProcessSettings {
+            intensity: 0.02,
+            ..default()
+        },
+    ));
+
+    // cube
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Cuboid::default()),
+            material: materials.add(Color::srgb(0.8, 0.7, 0.6)),
+            transform: Transform::from_xyz(0.0, 0.5, 0.0),
+            ..default()
+        },
+        Rotates,
+    ));
+    // light
+    commands.spawn(DirectionalLightBundle {
+        directional_light: DirectionalLight {
+            illuminance: 1_000.,
+            ..default()
+        },
+        ..default()
+    });
+}
+
+#[derive(Component)]
+struct Rotates;
+
+/// Rotates any entity around the x and y axis
+fn rotate(time: Res<Time>, mut query: Query<&mut Transform, With<Rotates>>) {
+    for mut transform in &mut query {
+        transform.rotate_x(0.55 * time.delta_seconds());
+        transform.rotate_z(0.15 * time.delta_seconds());
+    }
+}
+
+// Change the intensity over time to show that the effect is controlled from the main world
+fn update_settings(mut settings: Query<&mut PostProcessSettings>, time: Res<Time>) {
+    for mut setting in &mut settings {
+        let mut intensity = time.elapsed_seconds().sin();
+        // Make it loop periodically
+        intensity = intensity.sin();
+        // Remap it to 0..1 because the intensity can't be negative
+        intensity = intensity * 0.5 + 0.5;
+        // Scale it to a more reasonable level
+        intensity *= 0.015;
+
+        // Set the intensity.
+        // This will then be extracted to the render world and uploaded to the gpu automatically by the [`UniformComponentPlugin`]
+        setting.intensity = intensity;
+    }
 }

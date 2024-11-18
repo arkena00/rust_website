@@ -1,7 +1,3 @@
-﻿/*
-// This shader computes the chromatic aberration effect
-
-
 #import bevy_core_pipeline::fullscreen_vertex_shader::FullscreenVertexOutput
 
 @group(0) @binding(0) var screen_texture: texture_2d<f32>;
@@ -20,11 +16,13 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     // Chromatic aberration strength
     let offset_strength = settings.intensity;
 
+        var f = in.uv;
+        var o = textureSample(screen_texture, texture_sampler, in.uv);
+        f.y += o.r / o.g + offset_strength * .5;
+        o -= o - textureSample(screen_texture, texture_sampler, f);
+
+return o;
     // Sample each color channel with an arbitrary shift
-    return vec4<f32>(
-        textureSample(screen_texture, texture_sampler, in.uv + vec2<f32>(offset_strength, -offset_strength)).r,
-        textureSample(screen_texture, texture_sampler, in.uv + vec2<f32>(-offset_strength, 0.0)).g,
-        textureSample(screen_texture, texture_sampler, in.uv + vec2<f32>(0.0, offset_strength)).b,
-        1.0
-    );
-}*/
+    //return vec4<f32>(offset_strength, offset_strength, offset_strength, 1.0) * textureSample(screen_texture, texture_sampler, in.uv + vec2<f32>(offset_strength, -offset_strength)).r;
+
+}

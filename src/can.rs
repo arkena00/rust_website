@@ -76,7 +76,7 @@ impl Plugin for CanPlugin {
             .add_systems(Startup, (setup))
             .add_systems(Update, (
                 update,
-                //update_time_uniform,
+                //update_settings,
                 scroll_animate,
                 setup_animation.before(animate_targets)));
     }
