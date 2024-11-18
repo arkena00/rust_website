@@ -29,7 +29,7 @@ fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32> {
     var can0 = textureSample(base_color_texture0, base_color_sampler0, mesh.uv).rgba;
     var can1 = textureSample(base_color_texture1, base_color_sampler1, mesh.uv).rgba;
 
-    var out = mix(can0, can1, scroll);
+    var out = mix(can0, can1, s);
 
     return out;
 }

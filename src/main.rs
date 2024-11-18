@@ -2,6 +2,7 @@ mod background;
 mod can;
 mod component;
 mod postprocess;
+mod site;
 
 use std::f32::consts::TAU;
 use std::time::Duration;
@@ -12,20 +13,12 @@ use background::*;
 use postprocess::*;
 use can::CanPlugin;
 use component::*;
+use site::*;
 
 use bevy_kira_audio::prelude::*;
 
-
-//static mut SCROLL: f32 = 0.0;
-
 #[derive(Resource)]
 struct BackgroundAudio;
-
-#[derive(Resource)]
-struct SiteRes
-{
-    scroll: f32
-}
 
 
 #[derive(Event)]
@@ -42,13 +35,12 @@ fn main() {
                 }),
                 ..default()
             }))
-            .insert_resource(SiteRes{ scroll: 0. })
+            .insert_resource(nws::Site::default())
             .add_systems(Startup, (setup, start_background_audio))
             .add_systems(Update, (
                 mouse_scroll
                 , camera_move
                 , debug_text
-                , update_settings
             ))
             .add_plugins(BackgroundPlugin {})
             .add_plugins(AudioPlugin)
@@ -63,6 +55,7 @@ fn main() {
 struct ColorText;
 
 fn setup(
+    mut site: ResMut<nws::Site>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -80,15 +73,12 @@ fn setup(
 
     // camera
     commands.spawn((SiteCamera, Camera3dBundle {
-        transform: Transform::from_xyz(0.0, 0.0, 20.0).looking_at(Vec3::ZERO, Vec3::Y),
+        transform: site.camera.transform.looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
     }, PostProcessSettings {
-    intensity: 0.1,
+        scroll: 0.1,
     ..default()
     }));
-
-
-
 
 
     // text
@@ -143,7 +133,7 @@ fn setup(
 
 
 fn mouse_scroll(
-    mut site: ResMut<SiteRes>,
+    mut site: ResMut<nws::Site>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut scroll_event: EventWriter<ScrollEvent>,
 ) {
@@ -152,10 +142,11 @@ fn mouse_scroll(
         let dy = match mouse_wheel_event.unit {
             MouseScrollUnit::Line => mouse_wheel_event.y,
             MouseScrollUnit::Pixel => mouse_wheel_event.y / 100.,
-        };
-        site.scroll += dy;
-        site.scroll = site.scroll.clamp(-500., 0.);
-        scroll_event.send(ScrollEvent(site.scroll));
+        } * site.scroll.step;
+
+        site.scroll.value = (site.scroll.value + dy).clamp(-site.scroll.max_value, 0.);
+        site.scroll.percent = site.scroll.value / -site.scroll.max_value;
+        scroll_event.send(ScrollEvent(site.scroll.percent));
     }
 }
 
@@ -165,12 +156,12 @@ fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
 }
 
 fn debug_text(
-    site: ResMut<SiteRes>,
+    site: ResMut<nws::Site>,
     mut q: Query<&mut Text, With<DebugText>>,
 ) {
     let mut text = q.single_mut();
 
-    text.sections[0].value = format!("{:.1}", site.scroll);
+    text.sections[0].value = format!("{:.1} / {:.2}", site.scroll.value, site.scroll.percent);
 
 }
 
@@ -179,28 +170,11 @@ struct DebugText;
 
 
 fn camera_move(
-    site: ResMut<SiteRes>,
+    site: ResMut<nws::Site>,
     mut query: Query<(&SiteCamera, &mut Transform)>,
 ) {
     let (camera, mut transform) = query.single_mut();
 
-    transform.translation.y = site.scroll;
+    transform.translation.y = site.scroll.value;
 }
 
-
-
-fn update_settings(mut settings: Query<&mut PostProcessSettings>, time: Res<Time>) {
-    for mut setting in &mut settings {
-        let mut intensity = time.elapsed_seconds().sin();
-        // Make it loop periodically
-        intensity = intensity.sin();
-        // Remap it to 0..1 because the intensity can't be negative
-        intensity = intensity * 0.5 + 0.5;
-        // Scale it to a more reasonable level
-        intensity *= 0.015;
-
-        // Set the intensity.
-        // This will then be extracted to the render world and uploaded to the gpu automatically by the [`UniformComponentPlugin`]
-        setting.intensity = intensity;
-    }
-}

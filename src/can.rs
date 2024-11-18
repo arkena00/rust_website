@@ -13,18 +13,23 @@ use bevy::{
     pbr::CascadeShadowConfigBuilder,
 };
 
-
 use std::f32::consts::TAU;
+use std::ops::Add;
 use std::time::Duration;
 use bevy::color::palettes::basic::WHITE;
 use bevy::math::vec3;
 use bevy::render::extract_component::{ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin};
 use bevy::render::render_resource::ShaderType;
 use crate::component::{Rotatable};
-use crate::{ScrollEvent, SiteRes};
+use crate::{ScrollEvent};
 
 use bevy::prelude::*;
 use bevy::render::render_resource::{Shader};
+use crate::nws::*;
+use crate::site::nws;
+
+#[derive(Component)]
+pub struct CanTag;
 
 #[derive(Component)]
 struct Curve(CubicCurve<Vec3>);
@@ -78,7 +83,7 @@ impl Plugin for CanPlugin {
                 update,
                 //update_settings,
                 scroll_animate,
-                setup_animation.before(animate_targets)));
+                /*setup_animation.before(animate_targets)*/));
     }
 }
 
@@ -94,13 +99,26 @@ fn setup(
             transform: Transform::default(),
             ..Default::default()
         }).insert(TimeUniform{ intensity: 0.0 });
-
     */
 
     let can_mesh: Handle<Mesh> = asset_server.load("meshes/can.glb#Mesh0/Primitive0");
 
-    let test: Handle<Scene> = asset_server.load(GltfAssetLabel::Scene(0).from_asset("animations/can.glb"));
+    commands.spawn((MaterialMeshBundle {
+        mesh: can_mesh,
+        material: materials.add(CanMaterial {
+            color: LinearRgba::WHITE,
+            scroll: 0.,
+            color_texture0: Some(asset_server.load("textures/can0.png")),
+            color_texture1: Some(asset_server.load("textures/can1.png")),
+        }),
+        transform: Transform::from_xyz(-5.0, 0.0, 0.0).with_rotation(Quat::from_euler(EulerRot::XYZ, 0., 0., 90_f32.to_radians())),
+        ..default()
+    }, CanTag{}
+    ));
 
+
+    let test: Handle<Scene> = asset_server.load(GltfAssetLabel::Scene(0).from_asset("animations/can.glb"));
+    /*
     let animation_intro = [[
         vec3(-6., 2., 0.),
         vec3(12., 8., 0.),
@@ -108,7 +126,6 @@ fn setup(
         vec3(6., 2., 0.),
 
     ]];
-
 
     let bezier = CubicBezier::new(animation_intro).to_curve();
 
@@ -126,7 +143,6 @@ fn setup(
     }, Rotatable { speed: 0.3 }
                     , Curve(bezier)
     ));
-
 
     let clip = asset_server.load( GltfAssetLabel::Animation(0).from_asset("animations/can.glb") );
 
@@ -152,26 +168,37 @@ fn setup(
         scene: asset_server.load(GltfAssetLabel::Scene(0).from_asset("animations/can.glb")),
         ..default()
     });
-
+*/
 
 
 }
 
-fn update(mut cubes: Query<(&mut Transform, &Rotatable)>
-          , mut scroll_event: EventReader<ScrollEvent>
-          , timer: Res<Time>)
+fn update(
+    site: ResMut<nws::Site>,
+    timer: Res<Time>,
+    mut query: Query<(&mut Transform, &CanTag)>,
+    mut scroll_event: EventReader<ScrollEvent>)
 {
-    for (mut transform, cube) in &mut cubes {
+    let (mut transform, _) = query.single_mut();
+
+    transform.translation.y = site.scroll.value;
+    let can_rotation = transform.rotation.to_euler(EulerRot::XYZ);
+    transform.rotation = Quat::from_euler(EulerRot::XYZ, site.scroll.value * -0.1, can_rotation.1, can_rotation.2);
+
+
+    //transform.translation.y += site.scroll.value;
+
+/*    for (mut transform, cube) in &mut cubes {
         transform.rotate_y(cube.speed * TAU * timer.delta_seconds());
 
         for ev in scroll_event.read() {
             transform.rotate_x(0.01 * TAU * ev.0);
         }
-    }
+    }*/
 }
 
 fn scroll_animate(time: Res<Time>,
-                  mut site: ResMut<SiteRes>,
+                  mut site: ResMut<nws::Site>,
                   mut query: Query<(&mut Transform, &Curve)>,
                   mut gizmos: Gizmos) {
     let t = (time.elapsed_seconds().sin() + 1.) / 2.;
@@ -182,7 +209,7 @@ fn scroll_animate(time: Res<Time>,
         // position takes a point from the curve where 0 is the initial point
         // and 1 is the last point
 
-        transform.translation = cubic_curve.0.position(site.scroll.abs() / 10.);
+        //transform.translation = cubic_curve.0.position(site.scroll.step.abs() / 10.);
     }
 }
 

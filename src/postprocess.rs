@@ -24,6 +24,7 @@
     },
 };
 
+use crate::site::nws;
 
 /// It is generally encouraged to set up post processing effects as a plugin
 pub struct PostProcessPlugin;
@@ -282,7 +283,7 @@ impl FromWorld for PostProcessPipeline {
 // This is the component that will get passed to the shader
 #[derive(Component, Default, Clone, Copy, ExtractComponent, ShaderType)]
 pub struct PostProcessSettings {
-    pub intensity: f32,
+    pub scroll: f32,
     // WebGL2 structs must be 16 byte aligned.
     #[cfg(feature = "webgl2")]
     _webgl2_padding: Vec3,
@@ -308,7 +309,7 @@ fn setup(
         // Add the setting to the camera.
         // This component is also used to determine on which camera to run the post processing effect.
         PostProcessSettings {
-            intensity: 0.02,
+            scroll: 0.02,
             ..default()
         },
     ));
@@ -345,7 +346,9 @@ fn rotate(time: Res<Time>, mut query: Query<&mut Transform, With<Rotates>>) {
 }
 
 // Change the intensity over time to show that the effect is controlled from the main world
-fn update_settings(mut settings: Query<&mut PostProcessSettings>, time: Res<Time>) {
+fn update_settings(mut settings: Query<&mut PostProcessSettings>
+                   , time: Res<Time>
+                    , site: ResMut<nws::Site>) {
     for mut setting in &mut settings {
         let mut intensity = time.elapsed_seconds().sin();
         // Make it loop periodically
@@ -357,6 +360,6 @@ fn update_settings(mut settings: Query<&mut PostProcessSettings>, time: Res<Time
 
         // Set the intensity.
         // This will then be extracted to the render world and uploaded to the gpu automatically by the [`UniformComponentPlugin`]
-        setting.intensity = intensity;
+        setting.scroll = site.scroll.percent;
     }
 }

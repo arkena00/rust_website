@@ -12,21 +12,7 @@
 struct BackgroundMaterial {
     #[uniform(0)]
     color: LinearRgba,
-    #[texture(1)]
-    #[sampler(2)]
-    color_texture: Option<Handle<Image>>,
 }
-
-#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-struct CustomMaterial {
-    #[uniform(0)]
-    color: LinearRgba,
-    #[texture(1)]
-    #[sampler(2)]
-    color_texture: Option<Handle<Image>>,
-}
-
-
 
 pub struct BackgroundPlugin;
 
@@ -46,16 +32,16 @@ fn setup(
 ) {
     //let mut rng = rand::thread_rng();
     //let start_time = rng.gen_range(0.0..100.0f32);
+
     // cube
-    commands.spawn(MaterialMeshBundle {
+/*    commands.spawn(MaterialMeshBundle {
         mesh: meshes.add(Rectangle::new(5.0, 10.0)),
         transform: Transform::from_xyz(0.0, 0.0, 0.0),
         material: materials.add(BackgroundMaterial {
             color: LinearRgba::WHITE,
-            color_texture: Some(asset_server.load("can.png")),
         }),
         ..default()
-    });
+    });*/
 
 }
 
