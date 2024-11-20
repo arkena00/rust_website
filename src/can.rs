@@ -18,6 +18,7 @@ use std::ops::Add;
 use std::time::Duration;
 use bevy::color::palettes::basic::WHITE;
 use bevy::math::vec3;
+use bevy::pbr::{ExtendedMaterial, MaterialExtension};
 use bevy::render::extract_component::{ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin};
 use bevy::render::render_resource::ShaderType;
 use crate::component::{Rotatable};
@@ -25,9 +26,14 @@ use crate::{nws, ScrollEvent};
 
 use bevy::prelude::*;
 use bevy::render::render_resource::{Shader};
+use bevy::prelude::*;
+use bevy_easings::*;
 
 #[derive(Component)]
-pub struct CanTag;
+pub struct CanEntity
+{
+    material: Handle<ExtendedMaterial<StandardMaterial, CanMaterial>>
+}
 
 #[derive(Component)]
 struct Curve(CubicCurve<Vec3>);
@@ -41,18 +47,18 @@ struct TimeUniform {
 }
 
 
-#[derive(Asset, TypePath, AsBindGroup, Clone)]
+#[derive(Component, Asset, TypePath, AsBindGroup, Clone)]
 struct CanMaterial {
-    #[uniform(0)]
-    color: LinearRgba,
-    #[uniform(1)]
+    #[uniform(100)]
     scroll: f32,
-    #[texture(2)]
-    #[sampler(3)]
-    color_texture0: Option<Handle<Image>>,
-    #[texture(4)]
-    #[sampler(5)]
-    color_texture1: Option<Handle<Image>>,
+    #[uniform(101)]
+    page: f32,
+    #[texture(200)]
+    #[sampler(201)]
+    can_texture0: Option<Handle<Image>>,
+    #[texture(202)]
+    #[sampler(203)]
+    can_texture1: Option<Handle<Image>>,
 }
 
 #[derive(Resource)]
@@ -63,7 +69,7 @@ struct Animations {
 }
 
 
-impl Material for CanMaterial {
+impl MaterialExtension for CanMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/can.wgsl".into()
     }
@@ -74,56 +80,63 @@ pub struct CanPlugin;
 impl Plugin for CanPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_plugins(MaterialPlugin::<CanMaterial>::default())
+            .add_plugins(MaterialPlugin::<ExtendedMaterial<StandardMaterial, CanMaterial>,
+            >::default())
             //.add_plugins(UniformComponentPlugin::<TimeUniform>::default())
             .add_systems(Startup, (setup))
             .add_systems(Update, (
                 update,
+                update_shader,
                 //update_settings,
                 scroll_animate,
                 /*setup_animation.before(animate_targets)*/));
     }
 }
 
+/*#[derive(Default, Component)]
+struct LerpComponent(f32);
+impl Lerp for LerpComponent {
+    type Scalar = f32;
+
+    fn lerp(&self, other: &Self, scalar: &Self::Scalar) -> Self {
+        LerpComponent(interpolation::lerp(&self.0, &other.0, scalar))
+    }
+}*/
+
 fn setup(
     mut commands: Commands,
-    mut materials: ResMut<Assets<CanMaterial>>,
+    mut materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, CanMaterial>>>,
     mut graphs: ResMut<Assets<AnimationGraph>>,
     asset_server: Res<AssetServer>,
 ) {
     let can_mesh: Handle<Mesh> = asset_server.load("meshes/can.glb#Mesh0/Primitive0");
     let can_mesh2: Handle<Mesh> = asset_server.load("meshes/can.glb#Mesh0/Primitive0");
 
+    let material_handle = materials.add(ExtendedMaterial {
+        base: StandardMaterial {
+            base_color: LinearRgba::WHITE.into(),
+            base_color_texture: Some(asset_server.load("textures/can0.png")),
+            ..Default::default()
+        },
+        extension: CanMaterial {
+            scroll: 0.,
+            page: 0.,
+            can_texture0: Some(asset_server.load("textures/can0.png")),
+            can_texture1: Some(asset_server.load("textures/can1.png")),
+        },
+    });
+
     commands.spawn((MaterialMeshBundle {
         mesh: can_mesh,
-        material: materials.add(CanMaterial {
-            color: LinearRgba::WHITE,
-            scroll: 0.,
-            color_texture0: Some(asset_server.load("textures/can0.png")),
-            color_texture1: Some(asset_server.load("textures/can1.png")),
-        }),
-        transform: Transform::from_xyz(-1440.0 / 2., 0.0, 100.0)
+        material: material_handle.clone(),
+        transform: Transform::from_xyz(-1240.0 / 2., 0.0, 100.0)
             .with_rotation(Quat::from_euler(EulerRot::XYZ, 0., 0., 90_f32.to_radians()))
             .with_scale(Vec3::splat(100.)),
         ..default()
-    }, CanTag{}
-    ));
-
-    commands.spawn((MaterialMeshBundle {
-        mesh: can_mesh2,
-        material: materials.add(CanMaterial {
-            color: LinearRgba::WHITE,
-            scroll: 0.,
-            color_texture0: Some(asset_server.load("textures/can0.png")),
-            color_texture1: Some(asset_server.load("textures/can1.png")),
-        }),
-        transform: Transform::from_xyz(1440.0 / 2., 0.0, 100.0)
-            .with_rotation(Quat::from_euler(EulerRot::XYZ, 0., 0., 90_f32.to_radians()))
-            .with_scale(Vec3::splat(100.)),
-        ..default()
+    }, CanEntity{
+        material: material_handle,
     }
     ));
-
 
     let test: Handle<Scene> = asset_server.load(GltfAssetLabel::Scene(0).from_asset("animations/can.glb"));
     /*
@@ -184,7 +197,7 @@ fn setup(
 fn update(
     site: ResMut<nws::site::Site>,
     timer: Res<Time>,
-    mut query: Query<(&mut Transform, &CanTag)>,
+    mut query: Query<(&mut Transform, &CanEntity)>,
     mut scroll_event: EventReader<ScrollEvent>)
 {
     let (mut transform, _) = query.single_mut();
@@ -246,3 +259,17 @@ fn setup_animation(
     }
 }
 
+fn update_shader(
+    site: ResMut<nws::site::Site>,
+    timer: Res<Time>,
+    mut materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, CanMaterial>>>,
+    mut query: Query<&mut CanEntity>)
+{
+    let mut can_entity = query.single_mut();
+    if let Some(material) = materials.get_mut(&can_entity.material) {
+        material.extension.scroll = site.scroll.percent;
+        material.extension.page = site.page_index.into();
+    }
+
+    //materials.get_mut(&can_entity.material).unwrap().extension.scroll = site.scroll.value;
+}

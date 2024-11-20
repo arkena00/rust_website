@@ -5,7 +5,7 @@ use bevy::prelude::{Resource, Transform};
 #[derivative(Default)]
 pub struct Camera
 {
-    #[derivative(Default(value = "Transform::from_xyz(0.0, 0.0, 2800.0)"))]
+    #[derivative(Default(value = "Transform::from_xyz(0.0, 0.0, 5000.0)"))]
     pub transform: Transform,
 }
 
@@ -40,6 +40,7 @@ pub struct Site
     pub camera: Camera,
     pub state: State,
     pub scroll: Scroll,
+    pub page_index: u8,
 }
 
 impl Default for Site {
@@ -48,6 +49,7 @@ impl Default for Site {
             camera: Camera::default(),
             state: State::default(),
             scroll: Scroll::default(),
+            page_index: 0,
         }
     }
 }

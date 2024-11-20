@@ -104,7 +104,7 @@ fn setup(
     add_frame(&mut commands, Srgba::hex("F4CC81").unwrap(), 1024., Path::new("textures/background2.png"), Path::new("textures/image.png"));
     add_frame(&mut commands, Srgba::hex("9FAAC3").unwrap(), 1024., Path::new("textures/background3.png"), Path::new("textures/blank.png"));
     add_frame(&mut commands, Srgba::hex("81A3F4").unwrap(), 1024., Path::new("textures/background4.png"), Path::new("textures/blank.png"));
-    add_frame(&mut commands, Srgba::hex("121316").unwrap(), 663., Path::new("textures/background5.png"), Path::new("textures/blank.png"));
+    add_frame(&mut commands, Srgba::hex("121316").unwrap(), 663., Path::new("textures/blank.png"), Path::new("textures/blank.png"));
 
 
 

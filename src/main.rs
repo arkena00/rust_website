@@ -13,6 +13,7 @@ use can::CanPlugin;
 use component::*;
 use postprocess::*;
 use bevy::color::palettes;
+use bevy_easings::EasingsPlugin;
 use bevy_mod_billboard::prelude::*;
 
 use bevy_kira_audio::prelude::*;
@@ -44,12 +45,13 @@ fn main() {
             }
         ))
         .insert_resource(nws::site::Site::default())
-        .add_systems(Startup, (setup))
+        .add_systems(Startup, (setup, start_background_audio))
         .add_systems(Update, (
             mouse_scroll,
             camera_move,
         ))
         .add_plugins(nws::content::ContentPlugin{})
+        .add_plugins(EasingsPlugin)
         .add_plugins(BackgroundPlugin{})
         .add_plugins(AudioPlugin)
         .add_plugins(PostProcessPlugin{})
@@ -66,19 +68,18 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands.spawn(PointLightBundle {
-        point_light: PointLight {
-            shadows_enabled: true,
+    // light
+    commands.spawn((
+        DirectionalLightBundle {
+            transform: Transform::from_xyz(0.0, 0.0, 10.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
-        ..default()
-    });
+    ));
 
     // camera
     commands.spawn((SiteCamera, Camera3dBundle {
         projection: PerspectiveProjection {
-            fov: 20.0_f32.to_radians(),
+            fov: 10.0_f32.to_radians(),
             ..default()
         }.into(),
         transform: site.camera.transform.looking_at(Vec3::ZERO, Vec3::Y),
@@ -104,13 +105,18 @@ fn mouse_scroll(
 
         site.scroll.value = (site.scroll.value + dy).clamp(-site.scroll.max_value, 0.);
         site.scroll.percent = site.scroll.value / -site.scroll.max_value;
+
+        site.page_index = 0;
+        if site.scroll.percent > 0.355239779 {
+            site.page_index = 1;
+        }
         scroll_event.send(ScrollEvent(site.scroll.percent));
     }
 }
 
 
 fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
-    //audio.play(asset_server.load("sounds/intro.ogg")).looped();
+    //audio.play(asset_server.load("sounds/intro.mp3")).looped();
 }
 
 

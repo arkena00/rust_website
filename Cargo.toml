@@ -37,3 +37,4 @@ webbrowser = { version = "1", features = ["hardened"] }
 rand = "0.8.5"
 derivative = "2.2.0"
 bevy_mod_billboard = "0.7.0"
+bevy_easings = "0.14.0"

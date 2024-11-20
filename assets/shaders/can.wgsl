@@ -1,35 +1,45 @@
-#import bevy_sprite::mesh2d_vertex_output::VertexOutput
-#import bevy_pbr::mesh_view_bindings::globals
+#import bevy_pbr::{
+    pbr_fragment::pbr_input_from_standard_material,
+    pbr_functions::alpha_discard,
+}
 
-// we can import items from shader modules in the assets folder with a quoted path
-#import "shaders/custom_material_import.wgsl"::COLOR_MULTIPLIER
+#ifdef PREPASS_PIPELINE
+#import bevy_pbr::{
+    prepass_io::{VertexOutput, FragmentOutput},
+    pbr_deferred_functions::deferred_output,
+}
+#else
+#import bevy_pbr::{
+    forward_io::{VertexOutput, FragmentOutput},
+    pbr_functions::{apply_pbr_lighting, main_pass_post_lighting_processing},
+}
+#endif
 
-@group(2) @binding(0) var<uniform> material_color: vec4<f32>;
-@group(2) @binding(1) var<uniform> scroll: f32;;
-@group(2) @binding(2) var base_color_texture0: texture_2d<f32>;
-@group(2) @binding(3) var base_color_sampler0: sampler;
-@group(2) @binding(4) var base_color_texture1: texture_2d<f32>;
-@group(2) @binding(5) var base_color_sampler1: sampler;
 
-struct Uniforms {
-    time: f32,
-};
+@group(2) @binding(200) var can_texture0: texture_2d<f32>;
+@group(2) @binding(201) var can_texture0_sampler: sampler;
+@group(2) @binding(202) var can_texture1: texture_2d<f32>;
+@group(2) @binding(203) var can_texture1_sampler: sampler;
 
-@group(0) @binding(0)
-var<uniform> uniforms: Uniforms;
 
+@group(2) @binding(100)
+var<uniform> scroll: f32;
+@group(2) @binding(101)
+var<uniform> page: f32;
 
 @fragment
-fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32> {
+fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> FragmentOutput {
+    var pbr_input = pbr_input_from_standard_material(in, is_front);
 
-    var s = sin(globals.time * 2);
+    // we can optionally modify the input before lighting and alpha_discard is applied
+    //pbr_input.material.base_color.b = pbr_input.material.base_color.r;
+
+    var out: FragmentOutput;
+    out.color = apply_pbr_lighting(pbr_input);
+    out.color = main_pass_post_lighting_processing(pbr_input, out.color);
 
 
-
-    var can0 = textureSample(base_color_texture0, base_color_sampler0, mesh.uv).rgba;
-    var can1 = textureSample(base_color_texture1, base_color_sampler1, mesh.uv).rgba;
-
-    var out = mix(can0, can1, s);
+    out.color = out.color * page;
 
     return out;
 }
