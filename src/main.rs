@@ -44,7 +44,6 @@ fn main() {
             }
         ))
         .insert_resource(nws::site::Site::default())
-        .insert_resource(nws::site::Site::default())
         .add_systems(Startup, (setup))
         .add_systems(Update, (
             mouse_scroll,

@@ -13,7 +13,7 @@ pub struct Camera
 #[derivative(Default)]
 pub struct Scroll
 {
-    #[derivative(Default(value = "10.0"))]
+    #[derivative(Default(value = "100.0"))]
     pub step: f32,
     #[derivative(Default(value = "0.0"))]
     pub percent: f32, // range: 0 (top) to 1 (bottom)

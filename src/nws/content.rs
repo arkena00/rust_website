@@ -1,6 +1,6 @@
-﻿use std::path::Path;
+﻿use std::cell::Cell;
+use std::path::Path;
 use bevy::color::palettes;
-use bevy::color::palettes::basic::PURPLE;
 use bevy::prelude::*;
 use bevy::render::render_resource::{AsBindGroup, ShaderRef};
 use bevy::text::Text2dBounds;
@@ -51,13 +51,13 @@ fn setup(
 ) {
     // frames
     let width = 1440.;
-    let mut last_position = 512.;
-    let mut x = 0.;
-    let mut add_frame = |background_color: Srgba, height, background_image, image|
-    {
-        commands.spawn(MaterialMeshBundle {
+    let initial_offset = 512.;
+    let mut last_position_y = initial_offset;
+
+    let mut add_frame = |cmds: &mut Commands, background_color: Srgba, height, background_image, image|{
+        cmds.spawn(MaterialMeshBundle {
             mesh: meshes.add(Rectangle::from_size(Vec2::new(width, height))),
-            transform: Transform::from_xyz(0., last_position - height / 2., 0.0),
+            transform: Transform::from_xyz(0., last_position_y - height / 2., 0.0),
             material: materials.add(FrameMaterial {
                 color: background_color.into(),
                 color_texture: Some(asset_server.load(background_image)),
@@ -65,38 +65,52 @@ fn setup(
             }),
             ..default()
         });
-        last_position -= height;
-        x += 200.;
+        last_position_y -= height;
     };
-
-    // let frame = nws::content::Frame::new();
-    add_frame(Srgba::WHITE, 1024., Path::new("textures/background0.png"), Path::new("textures/image.png"));
-    add_frame(Srgba::hex("121316").unwrap(), 2048., Path::new("textures/background1.png"), Path::new("textures/blank.png"));
-    add_frame(Srgba::hex("F4CC81").unwrap(), 1024., Path::new("textures/background2.png"), Path::new("textures/image.png"));
-    add_frame(Srgba::hex("9FAAC3").unwrap(), 1024., Path::new("textures/background3.png"), Path::new("textures/blank.png"));
-    add_frame(Srgba::hex("81A3F4").unwrap(), 1024., Path::new("textures/background4.png"), Path::new("textures/blank.png"));
-    add_frame(Srgba::hex("121316").unwrap(), 663., Path::new("textures/background5.png"), Path::new("textures/blank.png"));
-
 
     // text
-    let title_font = asset_server.load("fonts/DrukTextWide-Bold.ttf");
-    let title_style = TextStyle {
-        font_size: 60.0,
-        font: title_font.clone(),
-        color: Color::WHITE,
+    let mut last_txtposition_y = initial_offset;
+    let mut add_text = |cmds: &mut Commands, text: &str, background_color: Srgba, fsize: f32, size: Vec2, offset: f32, mut transform: Transform|
+    {
+        let mut rel_transform = transform;
+        rel_transform.translation.x += size.x / 2. - width / 2.;
+        //rel_transform.translation.y += transform.translation.y -offset + last_txtposition_y - size.y / 2.;
+
+        //rel_transform.translation.x = -transform.translation.x - size.x / 2. - width / 2.;
+        rel_transform.translation.y = -transform.translation.y - offset + last_txtposition_y - size.y / 2.;
+
+        cmds.spawn(BillboardTextBundle {
+            text_bounds: BillboardTextBounds( Text2dBounds{ size }  ),
+            transform: rel_transform,
+            text: Text::from_sections([
+                TextSection {
+                    value: text.to_string(),
+                    style: TextStyle {
+                        font_size: fsize,
+                        font: asset_server.load("fonts/DrukTextWide-Bold.ttf"),
+                        color: background_color.into(),
+                    }
+                },
+            ]),
+            ..default()
+        });
+        last_txtposition_y -= offset;
     };
-    commands.spawn(BillboardTextBundle {
-        text_bounds: BillboardTextBounds( Text2dBounds{ size: Vec2::new(50., 200.) }  ),
-        transform: Transform::from_xyz(-100., -500.0, 10.),
-        text: Text::from_sections([
-            TextSection {
-                value: "Solar Burn".to_string(),
-                style: title_style.clone()
-            },
-        ])
-            .with_justify(JustifyText::Left),
-        ..default()
-    });
+
+
+    // let frame = nws::content::Frame::new();
+    add_frame(&mut commands, Srgba::WHITE, 1024., Path::new("textures/background0.png"), Path::new("textures/image.png"));
+    add_frame(&mut commands, Srgba::hex("121316").unwrap(), 1534., Path::new("textures/background1.png"), Path::new("textures/blank.png"));
+    add_frame(&mut commands, Srgba::hex("F4CC81").unwrap(), 1024., Path::new("textures/background2.png"), Path::new("textures/image.png"));
+    add_frame(&mut commands, Srgba::hex("9FAAC3").unwrap(), 1024., Path::new("textures/background3.png"), Path::new("textures/blank.png"));
+    add_frame(&mut commands, Srgba::hex("81A3F4").unwrap(), 1024., Path::new("textures/background4.png"), Path::new("textures/blank.png"));
+    add_frame(&mut commands, Srgba::hex("121316").unwrap(), 663., Path::new("textures/background5.png"), Path::new("textures/blank.png"));
+
+
+
+    add_text(&mut commands, "DES BULLES DE BONHEUR", Srgba::hex("F4CC81").unwrap(), 64., Vec2::new(621., 112.), 1024., Transform::from_xyz(742., 197., 1.));
+    add_text(&mut commands, "SOLAR BURN", Srgba::hex("121316").unwrap(), 96., Vec2::new(471., 192.), 1534., Transform::from_xyz(750., 161., 1.));
+    add_text(&mut commands, "MOON DROP", Srgba::hex("121316").unwrap(), 96., Vec2::new(471., 192.), 1024., Transform::from_xyz(750., 161., 1.));
 
 }
 
@@ -124,4 +138,21 @@ fn update_text(
         //transform.translation.x = 100.0 * time.elapsed_seconds().sin() - 400.0;
         transform.translation.y = site.scroll.value * 0.008;
     }*/
+}
+
+
+#[derive(Default)]
+pub struct Frame {
+    width: f32,
+    height: f32,
+    color: Srgba,
+    position: Vec2,
+}
+
+
+impl Frame {
+    // This method will help users to discover the builder
+    pub fn add_text(&mut self) -> &mut Frame {
+        self
+    }
 }
