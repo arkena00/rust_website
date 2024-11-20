@@ -91,15 +91,8 @@ fn setup(
     mut graphs: ResMut<Assets<AnimationGraph>>,
     asset_server: Res<AssetServer>,
 ) {
-    // Insert the TimeUniform component on an entity
-    /*    commands.spawn(PbrBundle {
-            mesh: Default::default(),
-            transform: Transform::default(),
-            ..Default::default()
-        }).insert(TimeUniform{ intensity: 0.0 });
-    */
-
     let can_mesh: Handle<Mesh> = asset_server.load("meshes/can.glb#Mesh0/Primitive0");
+    let can_mesh2: Handle<Mesh> = asset_server.load("meshes/can.glb#Mesh0/Primitive0");
 
     commands.spawn((MaterialMeshBundle {
         mesh: can_mesh,
@@ -109,9 +102,26 @@ fn setup(
             color_texture0: Some(asset_server.load("textures/can0.png")),
             color_texture1: Some(asset_server.load("textures/can1.png")),
         }),
-        transform: Transform::from_xyz(-5.0, 0.0, 0.0).with_rotation(Quat::from_euler(EulerRot::XYZ, 0., 0., 90_f32.to_radians())),
+        transform: Transform::from_xyz(-1440.0 / 2., 0.0, 100.0)
+            .with_rotation(Quat::from_euler(EulerRot::XYZ, 0., 0., 90_f32.to_radians()))
+            .with_scale(Vec3::splat(100.)),
         ..default()
     }, CanTag{}
+    ));
+
+    commands.spawn((MaterialMeshBundle {
+        mesh: can_mesh2,
+        material: materials.add(CanMaterial {
+            color: LinearRgba::WHITE,
+            scroll: 0.,
+            color_texture0: Some(asset_server.load("textures/can0.png")),
+            color_texture1: Some(asset_server.load("textures/can1.png")),
+        }),
+        transform: Transform::from_xyz(1440.0 / 2., 0.0, 100.0)
+            .with_rotation(Quat::from_euler(EulerRot::XYZ, 0., 0., 90_f32.to_radians()))
+            .with_scale(Vec3::splat(100.)),
+        ..default()
+    }
     ));
 
 
@@ -181,7 +191,7 @@ fn update(
 
     transform.translation.y = site.scroll.value;
     let can_rotation = transform.rotation.to_euler(EulerRot::XYZ);
-    transform.rotation = Quat::from_euler(EulerRot::XYZ, site.scroll.value * -0.1, can_rotation.1, can_rotation.2);
+    transform.rotation = Quat::from_euler(EulerRot::XYZ, site.scroll.value * -0.05, can_rotation.1, can_rotation.2);
 
 
     //transform.translation.y += site.scroll.value;

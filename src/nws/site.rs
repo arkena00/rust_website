@@ -5,7 +5,7 @@ use bevy::prelude::{Resource, Transform};
 #[derivative(Default)]
 pub struct Camera
 {
-    #[derivative(Default(value = "Transform::from_xyz(0.0, 0.0, 10.0)"))]
+    #[derivative(Default(value = "Transform::from_xyz(0.0, 0.0, 2800.0)"))]
     pub transform: Transform,
 }
 
@@ -13,13 +13,13 @@ pub struct Camera
 #[derivative(Default)]
 pub struct Scroll
 {
-    #[derivative(Default(value = "1.0"))]
+    #[derivative(Default(value = "10.0"))]
     pub step: f32,
     #[derivative(Default(value = "0.0"))]
     pub percent: f32, // range: 0 (top) to 1 (bottom)
     #[derivative(Default(value = "0.0"))]
     pub value: f32,
-    #[derivative(Default(value = "800.0"))]
+    #[derivative(Default(value = "5630.0"))]
     pub max_value: f32,
 }
 

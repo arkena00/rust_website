@@ -7,58 +7,66 @@ mod nws;
 use background::*;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
+use bevy::render::render_resource::{AddressMode, SamplerDescriptor};
+use bevy::render::texture::{ImageAddressMode, ImageSamplerDescriptor};
 use can::CanPlugin;
 use component::*;
 use postprocess::*;
+use bevy::color::palettes;
+use bevy_mod_billboard::prelude::*;
 
 use bevy_kira_audio::prelude::*;
 
 #[derive(Resource)]
 struct BackgroundAudio;
 
-
 #[derive(Event)]
 struct ScrollEvent(f32);
 
 fn main() {
-        App::new()
-            .add_plugins(DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    canvas: Some("#canvas".into()),
-                    fit_canvas_to_parent: true,
-                    prevent_default_event_handling: false,
-                    ..default()
-                }),
+    App::new()
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                canvas: Some("#canvas".into()),
+                fit_canvas_to_parent: true,
+                prevent_default_event_handling: false,
                 ..default()
-            }))
-            .insert_resource(nws::site::Site::default())
-            .add_systems(Startup, (setup, start_background_audio))
-            .add_systems(Update, (
-                mouse_scroll
-                , camera_move
-                , debug_text
-            ))
-            .add_plugins(nws::content::ContentPlugin {})
-            .add_plugins(BackgroundPlugin {})
-            .add_plugins(AudioPlugin)
-
-            .add_plugins(CanPlugin {})
-            .add_plugins(PostProcessPlugin {})
-            .add_event::<ScrollEvent>()
-            .run();
+            }),
+            ..default()
+        }).set(
+            ImagePlugin {
+                default_sampler: ImageSamplerDescriptor {
+                    address_mode_u: ImageAddressMode::Repeat,
+                    address_mode_v: ImageAddressMode::Repeat,
+                    address_mode_w: ImageAddressMode::Repeat,
+                    ..Default::default()
+                },
+            }
+        ))
+        .insert_resource(nws::site::Site::default())
+        .insert_resource(nws::site::Site::default())
+        .add_systems(Startup, (setup))
+        .add_systems(Update, (
+            mouse_scroll,
+            camera_move,
+        ))
+        .add_plugins(nws::content::ContentPlugin{})
+        .add_plugins(BackgroundPlugin{})
+        .add_plugins(AudioPlugin)
+        .add_plugins(PostProcessPlugin{})
+        .add_event::<ScrollEvent>()
+        .add_plugins(CanPlugin{})
+        .run();
 }
 
-#[derive(Component)]
-struct ColorText;
+
 
 fn setup(
-    mut site: ResMut<nws::site::Site>,
+    site: ResMut<nws::site::Site>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_server: Res<AssetServer>
 ) {
-    // light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
             shadows_enabled: true,
@@ -70,63 +78,17 @@ fn setup(
 
     // camera
     commands.spawn((SiteCamera, Camera3dBundle {
+        projection: PerspectiveProjection {
+            fov: 20.0_f32.to_radians(),
+            ..default()
+        }.into(),
         transform: site.camera.transform.looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
     }, PostProcessSettings {
         scroll: 0.1,
-    ..default()
-    }));
-
-
-    // text
-    commands.spawn((
-        // Create a TextBundle that has a Text with a single section.
-        TextBundle::from_section(
-            // Accepts a `String` or any type that converts into a `String`, such as `&str`
-            "M E I S T",
-            TextStyle {
-                // This font is loaded and will be used instead of the default font.
-                font: asset_server.load("fonts/Inversionz.ttf"),
-                font_size: 100.0,
-                ..default()
-            },
-        ) // Set the justification of the Text
-            .with_text_justify(JustifyText::Center)
-            // Set the style of the TextBundle itself.
-            .with_style(Style {
-                position_type: PositionType::Absolute,
-                top: Val::Px(5.0),
-                left: Val::Px(5.0),
-                ..default()
-            }),
-        ColorText,
-    ));
-
-
-    commands.spawn(NodeBundle {
-        style: Style {
-            width: Val::Percent(100.),
-            ..default()
-        },
         ..default()
-    })
-        .with_children(|root| {
-            // Text where we display current resolution
-            root.spawn((
-                TextBundle::from_section(
-                    "Resolution",
-                    TextStyle {
-                        font_size: 50.0,
-                        ..default()
-                    },
-                ),
-                DebugText,
-            ));
-        });
-
+    }));
 }
-
-
 
 
 fn mouse_scroll(
@@ -149,21 +111,9 @@ fn mouse_scroll(
 
 
 fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
-    audio.play(asset_server.load("sounds/intro.ogg")).looped();
+    //audio.play(asset_server.load("sounds/intro.ogg")).looped();
 }
 
-fn debug_text(
-    site: ResMut<nws::site::Site>,
-    mut q: Query<&mut Text, With<DebugText>>,
-) {
-    let mut text = q.single_mut();
-
-    text.sections[0].value = format!("{:.1} / {:.2}", site.scroll.value, site.scroll.percent);
-
-}
-
-#[derive(Component)]
-struct DebugText;
 
 
 fn camera_move(
