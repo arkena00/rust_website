@@ -3,9 +3,10 @@ mod can;
 mod component;
 mod postprocess;
 mod nws;
+mod material;
 
 use background::*;
-use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
+use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 use bevy::render::render_resource::{AddressMode, SamplerDescriptor};
 use bevy::render::texture::{ImageAddressMode, ImageSamplerDescriptor};
@@ -13,6 +14,7 @@ use can::CanPlugin;
 use component::*;
 use postprocess::*;
 use bevy::color::palettes;
+use bevy::window::{PrimaryWindow, WindowResolution};
 use bevy_easings::EasingsPlugin;
 use bevy_mod_billboard::prelude::*;
 
@@ -31,6 +33,7 @@ fn main() {
                 canvas: Some("#canvas".into()),
                 fit_canvas_to_parent: true,
                 prevent_default_event_handling: false,
+                resolution:  (1920., 1080.).into(),
                 ..default()
             }),
             ..default()
@@ -44,17 +47,19 @@ fn main() {
                 },
             }
         ))
+        .insert_resource(Msaa::Sample4)
         .insert_resource(nws::site::Site::default())
         .add_systems(Startup, (setup, start_background_audio))
         .add_systems(Update, (
             mouse_scroll,
             camera_move,
+            update_site,
         ))
         .add_plugins(nws::content::ContentPlugin{})
         .add_plugins(EasingsPlugin)
-        .add_plugins(BackgroundPlugin{})
+        //.add_plugins(BackgroundPlugin{})
         .add_plugins(AudioPlugin)
-        .add_plugins(PostProcessPlugin{})
+        //.add_plugins(PostProcessPlugin{})
         .add_event::<ScrollEvent>()
         .add_plugins(CanPlugin{})
         .run();
@@ -79,7 +84,7 @@ fn setup(
     // camera
     commands.spawn((SiteCamera, Camera3dBundle {
         projection: PerspectiveProjection {
-            fov: 10.0_f32.to_radians(),
+            fov: 30.0_f32.to_radians(),
             ..default()
         }.into(),
         transform: site.camera.transform.looking_at(Vec3::ZERO, Vec3::Y),
@@ -92,6 +97,8 @@ fn setup(
 
 
 fn mouse_scroll(
+    audio: Res<Audio>,
+    asset_server: Res<AssetServer>,
     mut site: ResMut<nws::site::Site>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut scroll_event: EventWriter<ScrollEvent>,
@@ -107,10 +114,30 @@ fn mouse_scroll(
         site.scroll.percent = site.scroll.value / -site.scroll.max_value;
 
         site.page_index = 0;
-        if site.scroll.percent > 0.355239779 {
-            site.page_index = 1;
-        }
+        let offset = 512.;
+        if site.scroll.value < offset + -1024. { site.page_index = 1; }
+        if site.scroll.value < offset + -1534. { site.page_index = 2; }
+        if site.scroll.value < offset + -2558. { site.page_index = 3; }
+
         scroll_event.send(ScrollEvent(site.scroll.percent));
+
+        if site.page_index == 3 && site.prev_page_index < site.page_index { audio.play(asset_server.load("sounds/fire.mp3")); }
+        site.prev_page_index = site.page_index;
+    }
+}
+
+fn update_site(mut site: ResMut<nws::site::Site>,
+               mut mouse_move_event: EventReader<MouseMotion>,
+               q_windows: Query<&Window, With<PrimaryWindow>>)
+{
+    for ev in mouse_move_event.read() {
+
+        if let Some(position) = q_windows.single().cursor_position() {
+            site.mouse = position;
+            println!("Cursor is inside the primary window, at {:?}", position);
+        } else {
+            println!("Cursor is not in the game window.");
+        }
     }
 }
 

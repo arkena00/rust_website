@@ -23,6 +23,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
     return o;*/
 
-    return vec4<f32>(offset_strength, offset_strength, offset_strength, 1.0) * textureSample(screen_texture, texture_sampler, in.uv + vec2<f32>(offset_strength, -offset_strength)).r;
+return vec4<f32>();
+    //return vec4<f32>(offset_strength, offset_strength, offset_strength, 1.0) * textureSample(screen_texture, texture_sampler, in.uv + vec2<f32>(offset_strength, -offset_strength)).r;
 
 }

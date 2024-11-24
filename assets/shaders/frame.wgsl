@@ -12,7 +12,6 @@
 @group(2) @binding(4) var image_sampler: sampler;
 
 struct Uniforms {
-    mouse: vec2<f32>,
     time: f32,
 };
 
@@ -37,6 +36,7 @@ fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32>
 
     //out += image * mask.g;
     //out += image2 * mask.r;
+    out = image2 * mask.r;
 
     return mask;
 }

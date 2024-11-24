@@ -21,11 +21,14 @@
 @group(2) @binding(202) var can_texture1: texture_2d<f32>;
 @group(2) @binding(203) var can_texture1_sampler: sampler;
 
-
-@group(2) @binding(100)
-var<uniform> scroll: f32;
-@group(2) @binding(101)
-var<uniform> page: f32;
+struct Parameters {
+    scroll: f32,
+    page: f32,
+#ifdef SIXTEEN_BYTE_ALIGNMENT
+    _webgl2_padding: vec2<f32>
+#endif
+}
+@group(2) @binding(100) var<uniform> params: Parameters;
 
 @fragment
 fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> FragmentOutput {
@@ -39,7 +42,7 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     out.color = main_pass_post_lighting_processing(pbr_input, out.color);
 
 
-    out.color = out.color * page;
+    out.color = out.color * 1.;
 
     return out;
 }

@@ -1,12 +1,14 @@
 ﻿use std::cell::Cell;
 use std::path::Path;
 use bevy::color::palettes;
+use bevy::pbr::ExtendedMaterial;
 use bevy::prelude::*;
-use bevy::render::render_resource::{AsBindGroup, ShaderRef};
+use bevy::render::render_resource::{AsBindGroup, RenderPipeline, ShaderRef};
 use bevy::text::Text2dBounds;
 use bevy_mod_billboard::BillboardTextBundle;
 use bevy_mod_billboard::prelude::BillboardPlugin;
 use bevy_mod_billboard::text::BillboardTextBounds;
+use crate::material::{MoonComponent, MoonMaterial};
 use crate::nws;
 
 pub struct ContentPlugin;
@@ -14,9 +16,10 @@ impl Plugin for ContentPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_plugins(MaterialPlugin::<FrameMaterial>::default())
+            .add_plugins(MaterialPlugin::<MoonMaterial>::default())
             .add_plugins(BillboardPlugin)
             .add_systems(Startup, setup)
-            .add_systems(Update, update_text);
+            .add_systems(Update, (update_text, update_shader));
     }
 }
 
@@ -45,6 +48,7 @@ impl Material for FrameMaterial {
 fn setup(
     mut commands: Commands,
     mut materials: ResMut<Assets<FrameMaterial>>,
+    mut extmaterials: ResMut<Assets<MoonMaterial>>,
     mut stdmaterials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
     asset_server: Res<AssetServer>,
@@ -67,6 +71,7 @@ fn setup(
         });
         last_position_y -= height;
     };
+
 
     // text
     let mut last_txtposition_y = initial_offset;
@@ -108,10 +113,19 @@ fn setup(
 
 
 
-    add_text(&mut commands, "DES BULLES DE BONHEUR", Srgba::hex("F4CC81").unwrap(), 64., Vec2::new(621., 112.), 1024., Transform::from_xyz(742., 197., 1.));
-    add_text(&mut commands, "SOLAR BURN", Srgba::hex("121316").unwrap(), 96., Vec2::new(471., 192.), 1534., Transform::from_xyz(750., 161., 1.));
-    add_text(&mut commands, "MOON DROP", Srgba::hex("121316").unwrap(), 96., Vec2::new(471., 192.), 1024., Transform::from_xyz(750., 161., 1.));
+    add_text(&mut commands, "DES BULLES DE BONHEUR", Srgba::hex("F4CC81").unwrap(), 64. - 10., Vec2::new(621. - 50., 112.), 1024., Transform::from_xyz(742. - 50., 197., 0.));
+    add_text(&mut commands, "SOLAR BURN", Srgba::hex("121316").unwrap(), 96. - 10., Vec2::new(471., 192.), 1534., Transform::from_xyz(750., 161., 1.));
+    add_text(&mut commands, "MOON DROP", Srgba::hex("121316").unwrap(), 96. - 10., Vec2::new(471., 192.), 1024., Transform::from_xyz(750., 161., 1.));
 
+
+/*    let moon_material_handle = extmaterials.add(MoonMaterial::default());
+    commands.spawn((MaterialMeshBundle {
+        mesh: meshes.add(Rectangle::from_size(Vec2::new(1024., 1024.))),
+        transform: Transform::from_xyz(0., 0., 0.),
+        material: moon_material_handle.clone(),
+        ..default()
+    }, MoonComponent{ material: moon_material_handle }
+    ));*/
 }
 
 
@@ -141,6 +155,7 @@ fn update_text(
 }
 
 
+
 #[derive(Default)]
 pub struct Frame {
     width: f32,
@@ -149,10 +164,20 @@ pub struct Frame {
     position: Vec2,
 }
 
-
 impl Frame {
     // This method will help users to discover the builder
     pub fn add_text(&mut self) -> &mut Frame {
         self
     }
+}
+
+fn update_shader(site: ResMut<nws::site::Site>,
+                 timer: Res<Time>,
+                 mut materials: ResMut<Assets<MoonMaterial>>,
+                 mut query: Query<&mut MoonComponent>)
+{
+/*    let mut moon_component = query.single_mut();
+    if let Some(moon_material) = materials.get_mut(&moon_component.material) {
+        moon_material.mouse = site.mouse;
+    }*/
 }

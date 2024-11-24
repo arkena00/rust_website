@@ -47,12 +47,12 @@ struct TimeUniform {
 }
 
 
-#[derive(Component, Asset, TypePath, AsBindGroup, Clone)]
+#[derive(Component, Default, Asset, TypePath, AsBindGroup, Clone)]
 struct CanMaterial {
     #[uniform(100)]
     scroll: f32,
-    #[uniform(101)]
     page: f32,
+    _webgl2_padding: Vec2,
     #[texture(200)]
     #[sampler(201)]
     can_texture0: Option<Handle<Image>>,
@@ -71,6 +71,9 @@ struct Animations {
 
 impl MaterialExtension for CanMaterial {
     fn fragment_shader() -> ShaderRef {
+        "shaders/can.wgsl".into()
+    }
+    fn deferred_fragment_shader() -> ShaderRef {
         "shaders/can.wgsl".into()
     }
 }
@@ -109,34 +112,55 @@ fn setup(
     mut graphs: ResMut<Assets<AnimationGraph>>,
     asset_server: Res<AssetServer>,
 ) {
-    let can_mesh: Handle<Mesh> = asset_server.load("meshes/can.glb#Mesh0/Primitive0");
-    let can_mesh2: Handle<Mesh> = asset_server.load("meshes/can.glb#Mesh0/Primitive0");
+/*    commands.spawn(SceneBundle {
+        transform: Transform::from_xyz(-1024.0 / 2., 0.0, 400.0).with_scale(Vec3::splat(100.)),
+        scene: asset_server
+            .load(GltfAssetLabel::Scene(0).from_asset("meshes/can.glb")),
+        ..default()
+    });*/
 
-    let material_handle = materials.add(ExtendedMaterial {
-        base: StandardMaterial {
-            base_color: LinearRgba::WHITE.into(),
-            base_color_texture: Some(asset_server.load("textures/can0.png")),
-            ..Default::default()
-        },
-        extension: CanMaterial {
-            scroll: 0.,
-            page: 0.,
-            can_texture0: Some(asset_server.load("textures/can0.png")),
-            can_texture1: Some(asset_server.load("textures/can1.png")),
-        },
-    });
+
+
+        let can_mesh0: Handle<Mesh> = asset_server.load("meshes/can.glb#Mesh0/Primitive0");
+        let can_mesh1: Handle<Mesh> = asset_server.load("meshes/can.glb#Mesh0/Primitive1");
+
+        let material_handle = materials.add(ExtendedMaterial {
+            base: StandardMaterial {
+                base_color: LinearRgba::WHITE.into(),
+                base_color_texture: Some(asset_server.load("textures/can0.png")),
+                ..Default::default()
+            },
+            extension: CanMaterial {
+                scroll: 0.,
+                page: 0.,
+                can_texture0: Some(asset_server.load("textures/can0.png")),
+                can_texture1: Some(asset_server.load("textures/can1.png")),
+                ..default()
+            },
+        });
+
+
+
 
     commands.spawn((MaterialMeshBundle {
-        mesh: can_mesh,
-        material: material_handle.clone(),
-        transform: Transform::from_xyz(-1240.0 / 2., 0.0, 100.0)
-            .with_rotation(Quat::from_euler(EulerRot::XYZ, 0., 0., 90_f32.to_radians()))
-            .with_scale(Vec3::splat(100.)),
-        ..default()
-    }, CanEntity{
-        material: material_handle,
-    }
-    ));
+            mesh: can_mesh0,
+            material: material_handle.clone(),
+            transform: Transform::from_xyz(-256.0 / 2., 0.0, 200.0)
+                .with_rotation(Quat::from_euler(EulerRot::XYZ, 0., 0., -90_f32.to_radians()))
+                .with_scale(Vec3::splat(120.)),
+            ..default()
+        }, CanEntity{
+            material: material_handle.clone(),
+        }
+        )).with_children(|parent| {
+            parent.spawn((MaterialMeshBundle {
+                mesh: can_mesh1,
+                material: material_handle.clone(),
+                ..default()
+            }));
+        });
+
+
 
     let test: Handle<Scene> = asset_server.load(GltfAssetLabel::Scene(0).from_asset("animations/can.glb"));
     /*
@@ -204,7 +228,7 @@ fn update(
 
     transform.translation.y = site.scroll.value;
     let can_rotation = transform.rotation.to_euler(EulerRot::XYZ);
-    transform.rotation = Quat::from_euler(EulerRot::XYZ, site.scroll.value * -0.05, can_rotation.1, can_rotation.2);
+    transform.rotation = Quat::from_euler(EulerRot::XYZ, site.scroll.value * -0.005, can_rotation.1, can_rotation.2);
 
 
     //transform.translation.y += site.scroll.value;
