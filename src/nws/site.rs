@@ -20,7 +20,7 @@ pub struct Scroll
     pub percent: f32, // range: 0 (top) to 1 (bottom)
     #[derivative(Default(value = "0.0"))]
     pub value: f32,
-    #[derivative(Default(value = "5630.0"))]
+    #[derivative(Default(value = "5230.0"))]
     pub max_value: f32,
 }
 

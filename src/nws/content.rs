@@ -115,7 +115,7 @@ fn setup(
     add_frame(&mut commands, Srgba::hex("F4CC81").unwrap(), 1024., Path::new("textures/background2.png"), Path::new("textures/image.png"));
     add_frame(&mut commands, Srgba::hex("9FAAC3").unwrap(), 1024., Path::new("textures/background3.png"), Path::new("textures/blank.png"));
     add_frame(&mut commands, Srgba::hex("81A3F4").unwrap(), 1024., Path::new("textures/background4.png"), Path::new("textures/blank.png"));
-    add_frame(&mut commands, Srgba::hex("121316").unwrap(), 663., Path::new("textures/blank.png"), Path::new("textures/blank.png"));
+    add_frame(&mut commands, Srgba::hex("121316").unwrap(), 663., Path::new("textures/background5.png"), Path::new("textures/blank.png"));
 
 
     let text_left = 739.;
@@ -126,7 +126,7 @@ exquis dans un restaurant luxueux, appréciez la complexité des
 arômes spéciaux des boissons MOIST.", Srgba::hex("121316").unwrap(), 20., Vec2::new(128., 843.), font_text.clone());
 
     add_text(&mut commands, "DES BULLES\nDE BONHEUR", Srgba::hex("F4CC81").unwrap(), 64., Vec2::new(text_left, 1221.), font_title.clone());
-    add_text(&mut commands, "DES INGRÉDIENTS 100% NATURELS", Srgba::hex("F4CC81").unwrap(), 16., Vec2::new(text_left, 1604.), font_title.clone());
+    add_text(&mut commands, "DES INGRÉDIENTS NATURELS", Srgba::hex("F4CC81").unwrap(), 16., Vec2::new(text_left, 1604.), font_title.clone());
     add_text(&mut commands, "Nous tenons particulièrement à ce que toutes nos boissons
 soient composés des ingrédients les plus purs possibles.
 Pas d’additif, pas d’édulcorant, pas de colorant artificiels,
@@ -140,9 +140,50 @@ confection qui ne dépasse jamais nos frontières.", Srgba::hex("FFFFFF").unwrap
 
 
 
+    add_text(&mut commands, "SOLAR\nBURN", Srgba::hex("121316").unwrap(), 64., Vec2::new(text_left, 2719.), font_title.clone());
+    add_text(&mut commands, "UNE SAVEUR BRULANTE", Srgba::hex("121316").unwrap(), 16., Vec2::new(text_left, 3081.), font_title.clone());
+    add_text(&mut commands, "Pour tous les amateurs de piquant, les mangeurs de têtes
+brulées ou tout simplement pour ceux en recherche de
+sensations fortes, Solar Burn est pour vous.", Srgba::hex("121316").unwrap(), 16., Vec2::new(text_left, 3081. + 47.), font_text.clone());
 
-    //add_text(&mut commands, "SOLAR BURN", Srgba::hex("121316").unwrap(), 96. - 10., Vec2::new(471., 192.), 1534., Transform::from_xyz(750., 161., 1.));
-    //add_text(&mut commands, "MOON DROP", Srgba::hex("121316").unwrap(), 96. - 10., Vec2::new(471., 192.), 1024., Transform::from_xyz(750., 161., 1.));
+    add_text(&mut commands, "COMPOSITION", Srgba::hex("121316").unwrap(), 16., Vec2::new(text_left, 3225.), font_title.clone());
+    add_text(&mut commands, "Extraits de gingembre, citron, orange, eau gazéifiée.
+Certifié sans caféine, sans sucre ajouté.
+Contient des vitamines B4 et B6.", Srgba::hex("121316").unwrap(), 16., Vec2::new(text_left, 3225. + 47.), font_text.clone());
+
+
+
+
+
+    add_text(&mut commands, "MOON\nDROP", Srgba::hex("121316").unwrap(), 64., Vec2::new(text_left, 3743.), font_title.clone());
+    add_text(&mut commands, "UNE FRAICHEUR LUNAIRE", Srgba::hex("F4CC81").unwrap(), 16., Vec2::new(text_left, 4105.), font_title.clone());
+    add_text(&mut commands, "Faites voyager vos papilles jusqu’à la lune grâce à la saveur
+Moon Drop. Un départ pétillant qui laisse place à un froid
+glaciaire pour vous rafraîchir à tous les coups.", Srgba::hex("121316").unwrap(), 16., Vec2::new(text_left, 4105. + 47.), font_text.clone());
+
+    add_text(&mut commands, "COMPOSITION", Srgba::hex("F4CC81").unwrap(), 16., Vec2::new(text_left, 4249.), font_title.clone());
+    add_text(&mut commands, "Extraits de gingembre, citron, orange, eau gazéifiée.
+Certifié sans caféine, sans sucre ajouté.
+Contient des vitamines B4 et B6.", Srgba::hex("121316").unwrap(), 16., Vec2::new(text_left, 4249. + 47.), font_text.clone());
+
+
+
+
+    add_text(&mut commands, "EARTH\nQUAKE", Srgba::hex("FFFFFF").unwrap(), 64., Vec2::new(text_left, 4767.), font_title.clone());
+    add_text(&mut commands, "LA PUISSANCE DE LA NATURE", Srgba::hex("F4CC81").unwrap(), 16., Vec2::new(text_left, 5129.), font_title.clone());
+    add_text(&mut commands, "Des saveurs venues tout droit des tréfonds de la Terre,
+Earth Quake rappelle toute la puissance de Dame Nature.
+Faites rugir le volcan qui est en vous !", Srgba::hex("FFFFFF").unwrap(), 16., Vec2::new(text_left, 5129. + 47.), font_text.clone());
+
+    add_text(&mut commands, "COMPOSITION", Srgba::hex("F4CC81").unwrap(), 16., Vec2::new(text_left, 5273.), font_title.clone());
+    add_text(&mut commands, "Grains de cacao moulus, poire, agrumes, eau.
+Certifié sans caféine, sans sucre ajouté.
+Contient de la vitamine C.", Srgba::hex("FFFFFF").unwrap(), 16., Vec2::new(text_left, 5273. + 47.), font_text.clone());
+
+
+
+
+
 
 }
 
@@ -167,7 +208,7 @@ fn update(
 {
     for e in scroll_event.read() {
         for (mut style, mut text) in &mut query {
-            text.target_pos.y = text.fixed_pos.y + site.scroll.value * 0.95;
+            text.target_pos.y = text.fixed_pos.y + site.scroll.value * 1.02;
             //text.pos.y =  text.target_pos.y - 100.0;
         }
     }

@@ -16,6 +16,7 @@ use bevy::{
 use std::f32::consts::TAU;
 use std::ops::Add;
 use std::time::Duration;
+use bevy::color::Color::Srgba;
 use bevy::color::palettes::basic::WHITE;
 use bevy::math::vec3;
 use bevy::pbr::{ExtendedMaterial, MaterialExtension};
@@ -90,8 +91,7 @@ pub struct CanPlugin;
 impl Plugin for CanPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_plugins(MaterialPlugin::<ExtendedMaterial<StandardMaterial, CanMaterial>,
-            >::default())
+            .add_plugins(MaterialPlugin::<ExtendedMaterial<StandardMaterial, CanMaterial>>::default())
             //.add_plugins(UniformComponentPlugin::<TimeUniform>::default())
             .add_systems(Startup, (setup))
             .add_systems(Update, smooth_update)
@@ -116,6 +116,7 @@ impl Lerp for LerpComponent {
 fn setup(
     mut commands: Commands,
     mut materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, CanMaterial>>>,
+    mut stdmaterials: ResMut<Assets<StandardMaterial>>,
     mut graphs: ResMut<Assets<AnimationGraph>>,
     asset_server: Res<AssetServer>,
 ) {
@@ -157,7 +158,6 @@ fn setup(
             mesh: can_mesh0,
             material: material_handle.clone(),
             transform: Transform::from_xyz(-256.0 / 2., 0.0, 200.0)
-                .with_rotation(Quat::from_euler(EulerRot::XYZ, 0., 0., -90_f32.to_radians()))
                 .with_scale(Vec3::splat(120.)),
             ..default()
         }, CanEntity{
@@ -166,7 +166,11 @@ fn setup(
         )).with_children(|parent| {
             parent.spawn((MaterialMeshBundle {
                 mesh: can_mesh1,
-                material: material_handle.clone(),
+                material: stdmaterials.add(StandardMaterial{
+                    base_color: bevy::color::Srgba::hex("B3B3B3").unwrap().into(),
+                    metallic: 0.721,
+                    ..default()
+                }),
                 ..default()
             }));
         });
