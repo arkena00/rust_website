@@ -8,8 +8,10 @@ use bevy::text::Text2dBounds;
 use bevy_mod_billboard::BillboardTextBundle;
 use bevy_mod_billboard::prelude::BillboardPlugin;
 use bevy_mod_billboard::text::BillboardTextBounds;
+use crate::can::CanEntity;
+use crate::component::{UIText};
 use crate::material::{MoonComponent, MoonMaterial};
-use crate::nws;
+use crate::{nws, ScrollEvent};
 
 pub struct ContentPlugin;
 impl Plugin for ContentPlugin {
@@ -19,12 +21,16 @@ impl Plugin for ContentPlugin {
             .add_plugins(MaterialPlugin::<MoonMaterial>::default())
             .add_plugins(BillboardPlugin)
             .add_systems(Startup, setup)
-            .add_systems(Update, (update_text, update_shader));
+            .add_systems(Update, (update, update_text, update_shader));
     }
 }
 
-#[derive(Component)]
-struct TitleText;
+#[derive(Component, Default)]
+struct TitleText
+{
+    pub position: Vec2,
+    pub target_position: Vec2,
+}
 
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -74,32 +80,32 @@ fn setup(
 
 
     // text
-    let mut last_txtposition_y = initial_offset;
-    let mut add_text = |cmds: &mut Commands, text: &str, background_color: Srgba, fsize: f32, size: Vec2, offset: f32, mut transform: Transform|
+
+    let font_title = asset_server.load("fonts/DrukTextWide-Bold.ttf");
+    let font_text = asset_server.load("fonts/Inter_18pt-Medium.ttf");
+    let mut add_text = |cmds: &mut Commands, text: &str, background_color: Srgba, fsize: f32, pos: Vec2, font: Handle<Font>|
     {
-        let mut rel_transform = transform;
-        rel_transform.translation.x += size.x / 2. - width / 2.;
-        //rel_transform.translation.y += transform.translation.y -offset + last_txtposition_y - size.y / 2.;
+        let top = pos.y;
+        let left = pos.x * 1.2;
 
-        //rel_transform.translation.x = -transform.translation.x - size.x / 2. - width / 2.;
-        rel_transform.translation.y = -transform.translation.y - offset + last_txtposition_y - size.y / 2.;
-
-        cmds.spawn(BillboardTextBundle {
-            text_bounds: BillboardTextBounds( Text2dBounds{ size }  ),
-            transform: rel_transform,
-            text: Text::from_sections([
-                TextSection {
-                    value: text.to_string(),
-                    style: TextStyle {
-                        font_size: fsize,
-                        font: asset_server.load("fonts/DrukTextWide-Bold.ttf"),
-                        color: background_color.into(),
-                    }
+        cmds.spawn((
+            TextBundle::from_section(
+                text,
+                TextStyle {
+                    font,
+                    font_size: fsize,
+                    color: background_color.into(),
+                    ..default()
                 },
-            ]),
-            ..default()
-        });
-        last_txtposition_y -= offset;
+            )
+                .with_style(Style {
+                    position_type: PositionType::Absolute,
+                    top: Val::Px(top),
+                    left: Val::Px(left),
+                    ..default()
+                }),
+            UIText{ pos, fixed_pos: pos, target_pos: pos },
+        ));
     };
 
 
@@ -112,20 +118,32 @@ fn setup(
     add_frame(&mut commands, Srgba::hex("121316").unwrap(), 663., Path::new("textures/blank.png"), Path::new("textures/blank.png"));
 
 
+    let text_left = 739.;
 
-    add_text(&mut commands, "DES BULLES DE BONHEUR", Srgba::hex("F4CC81").unwrap(), 64. - 10., Vec2::new(621. - 50., 112.), 1024., Transform::from_xyz(742. - 50., 197., 0.));
-    add_text(&mut commands, "SOLAR BURN", Srgba::hex("121316").unwrap(), 96. - 10., Vec2::new(471., 192.), 1534., Transform::from_xyz(750., 161., 1.));
-    add_text(&mut commands, "MOON DROP", Srgba::hex("121316").unwrap(), 96. - 10., Vec2::new(471., 192.), 1024., Transform::from_xyz(750., 161., 1.));
+    add_text(&mut commands, "La marque de soda qui va vous désaltérer tout en vous offrant
+des saveurs uniques au monde. Comme si vous dégustiez un met
+exquis dans un restaurant luxueux, appréciez la complexité des
+arômes spéciaux des boissons MOIST.", Srgba::hex("121316").unwrap(), 20., Vec2::new(128., 843.), font_text.clone());
+
+    add_text(&mut commands, "DES BULLES\nDE BONHEUR", Srgba::hex("F4CC81").unwrap(), 64., Vec2::new(text_left, 1221.), font_title.clone());
+    add_text(&mut commands, "DES INGRÉDIENTS 100% NATURELS", Srgba::hex("F4CC81").unwrap(), 16., Vec2::new(text_left, 1604.), font_title.clone());
+    add_text(&mut commands, "Nous tenons particulièrement à ce que toutes nos boissons
+soient composés des ingrédients les plus purs possibles.
+Pas d’additif, pas d’édulcorant, pas de colorant artificiels,
+que des saveurs extraites à la pulpe de la terre.", Srgba::hex("FFFFFF").unwrap(), 16., Vec2::new(text_left, 1604. + 47.), font_text.clone());
+
+    add_text(&mut commands, "MADE IN FRANCE. C’EST TOUT.", Srgba::hex("F4CC81").unwrap(), 16., Vec2::new(text_left, 1827.), font_title.clone());
+    add_text(&mut commands, "De nos fournisseurs à nos usines, nous choisissons
+précautionneusement nos partenaires en France pour une
+confection qui ne dépasse jamais nos frontières.", Srgba::hex("FFFFFF").unwrap(), 16., Vec2::new(text_left, 1827. + 47.), font_text.clone());
 
 
-/*    let moon_material_handle = extmaterials.add(MoonMaterial::default());
-    commands.spawn((MaterialMeshBundle {
-        mesh: meshes.add(Rectangle::from_size(Vec2::new(1024., 1024.))),
-        transform: Transform::from_xyz(0., 0., 0.),
-        material: moon_material_handle.clone(),
-        ..default()
-    }, MoonComponent{ material: moon_material_handle }
-    ));*/
+
+
+
+    //add_text(&mut commands, "SOLAR BURN", Srgba::hex("121316").unwrap(), 96. - 10., Vec2::new(471., 192.), 1534., Transform::from_xyz(750., 161., 1.));
+    //add_text(&mut commands, "MOON DROP", Srgba::hex("121316").unwrap(), 96. - 10., Vec2::new(471., 192.), 1024., Transform::from_xyz(750., 161., 1.));
+
 }
 
 
@@ -142,16 +160,34 @@ fn title_text(
     //transform.rotate_y(0.1 * 2. * timer.delta_seconds());
 }
 
+fn update(
+    site: ResMut<nws::site::Site>,
+    mut scroll_event: EventReader<ScrollEvent>,
+    mut query: Query<(&mut Style, &mut UIText)>)
+{
+    for e in scroll_event.read() {
+        for (mut style, mut text) in &mut query {
+            text.target_pos.y = text.fixed_pos.y + site.scroll.value * 0.95;
+            //text.pos.y =  text.target_pos.y - 100.0;
+        }
+    }
+}
+
 
 fn update_text(
     site: Res<nws::site::Site>,
     time: Res<Time>,
-    mut query: Query<&mut Transform, (With<Text>)>,
+    mut query: Query<(&mut Style, &mut UIText)>,
 ) {
-/*    for mut transform in &mut query {
-        //transform.translation.x = 100.0 * time.elapsed_seconds().sin() - 400.0;
-        transform.translation.y = site.scroll.value * 0.008;
-    }*/
+    for (mut style, mut text) in &mut query {
+        // transform.translation.x = 100.0 * time.elapsed_seconds().sin() - 400.0;
+        // style.top = Val::Px(text.top + site.scroll.value * 1.1);
+
+        text.pos.y = text.pos.y.lerp(text.target_pos.y, 0.1);
+        style.top = Val::Px( text.pos.y );
+
+        //style.top = Val::Px( text.target_pos.y );
+    }
 }
 
 

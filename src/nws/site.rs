@@ -44,6 +44,7 @@ pub struct Site
     pub prev_page_index: u8,
     pub page_index: u8,
     pub mouse: Vec2,
+    pub window_size: Vec2,
 }
 
 impl Default for Site {
@@ -55,6 +56,7 @@ impl Default for Site {
             scroll: Scroll::default(),
             prev_page_index: 0,
             page_index: 0,
+            window_size: Vec2::new(1920., 1080.),
         }
     }
 }

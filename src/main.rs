@@ -14,7 +14,9 @@ use can::CanPlugin;
 use component::*;
 use postprocess::*;
 use bevy::color::palettes;
-use bevy::window::{PrimaryWindow, WindowResolution};
+use bevy::core_pipeline::experimental::taa::TemporalAntiAliasBundle;
+use bevy::core_pipeline::tonemapping::Tonemapping;
+use bevy::window::{PrimaryWindow, WindowResized, WindowResolution};
 use bevy_easings::EasingsPlugin;
 use bevy_mod_billboard::prelude::*;
 
@@ -47,7 +49,6 @@ fn main() {
                 },
             }
         ))
-        .insert_resource(Msaa::Sample4)
         .insert_resource(nws::site::Site::default())
         .add_systems(Startup, (setup, start_background_audio))
         .add_systems(Update, (
@@ -76,13 +77,14 @@ fn setup(
     // light
     commands.spawn((
         DirectionalLightBundle {
-            transform: Transform::from_xyz(0.0, 0.0, 10.0).looking_at(Vec3::ZERO, Vec3::Y),
+            transform: Transform::from_xyz(0.0, 0.0, 100.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
     ));
 
     // camera
-    commands.spawn((SiteCamera, Camera3dBundle {
+    commands.spawn((SiteCamera::default(), Camera3dBundle {
+        tonemapping: Tonemapping::None,
         projection: PerspectiveProjection {
             fov: 30.0_f32.to_radians(),
             ..default()
@@ -102,7 +104,12 @@ fn mouse_scroll(
     mut site: ResMut<nws::site::Site>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut scroll_event: EventWriter<ScrollEvent>,
+    mut query: Query<(&mut SiteCamera, &mut Transform)>,
 ) {
+    let (mut camera, transform) = query.single_mut();
+    camera.position = transform.translation.y;
+
+
     for mouse_wheel_event in mouse_wheel_events.read()
     {
         let dy = match mouse_wheel_event.unit {
@@ -123,20 +130,26 @@ fn mouse_scroll(
 
         if site.page_index == 3 && site.prev_page_index < site.page_index { audio.play(asset_server.load("sounds/fire.mp3")); }
         site.prev_page_index = site.page_index;
+
+
+        camera.target_position = site.scroll.value;
     }
 }
 
 fn update_site(mut site: ResMut<nws::site::Site>,
                mut mouse_move_event: EventReader<MouseMotion>,
+               mut resize_event: EventReader<WindowResized>,
                q_windows: Query<&Window, With<PrimaryWindow>>)
 {
-    for ev in mouse_move_event.read() {
+    for e in resize_event.read() {
+        site.window_size.x = e.width;
+        site.window_size.y = e.height;
+    }
 
+    for ev in mouse_move_event.read() {
         if let Some(position) = q_windows.single().cursor_position() {
             site.mouse = position;
-            println!("Cursor is inside the primary window, at {:?}", position);
         } else {
-            println!("Cursor is not in the game window.");
         }
     }
 }
@@ -150,10 +163,9 @@ fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
 
 fn camera_move(
     site: ResMut<nws::site::Site>,
-    mut query: Query<(&SiteCamera, &mut Transform)>,
+    mut query: Query<(&mut SiteCamera, &mut Transform)>,
 ) {
-    let (camera, mut transform) = query.single_mut();
+    let (mut camera, mut transform) = query.single_mut();
 
-    transform.translation.y = site.scroll.value;
+    transform.translation.y = camera.position.lerp(camera.target_position, 0.1);
 }
-

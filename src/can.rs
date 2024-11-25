@@ -29,10 +29,14 @@ use bevy::render::render_resource::{Shader};
 use bevy::prelude::*;
 use bevy_easings::*;
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct CanEntity
 {
-    material: Handle<ExtendedMaterial<StandardMaterial, CanMaterial>>
+    material: Handle<ExtendedMaterial<StandardMaterial, CanMaterial>>,
+    position: f32,
+    target_position: f32,
+    rotation: Quat,
+    target_rotation: Quat,
 }
 
 #[derive(Component)]
@@ -87,11 +91,11 @@ impl Plugin for CanPlugin {
             >::default())
             //.add_plugins(UniformComponentPlugin::<TimeUniform>::default())
             .add_systems(Startup, (setup))
+            .add_systems(Update, smooth_update)
             .add_systems(Update, (
                 update,
                 update_shader,
                 //update_settings,
-                scroll_animate,
                 /*setup_animation.before(animate_targets)*/));
     }
 }
@@ -150,7 +154,7 @@ fn setup(
                 .with_scale(Vec3::splat(120.)),
             ..default()
         }, CanEntity{
-            material: material_handle.clone(),
+            material: material_handle.clone(), ..default()
         }
         )).with_children(|parent| {
             parent.spawn((MaterialMeshBundle {
@@ -221,43 +225,16 @@ fn setup(
 fn update(
     site: ResMut<nws::site::Site>,
     timer: Res<Time>,
-    mut query: Query<(&mut Transform, &CanEntity)>,
+    mut query: Query<(&mut Transform, &mut CanEntity)>,
     mut scroll_event: EventReader<ScrollEvent>)
 {
-    let (mut transform, _) = query.single_mut();
+    let (mut transform, mut can) = query.single_mut();
 
-    transform.translation.y = site.scroll.value;
-    let can_rotation = transform.rotation.to_euler(EulerRot::XYZ);
-    transform.rotation = Quat::from_euler(EulerRot::XYZ, site.scroll.value * -0.005, can_rotation.1, can_rotation.2);
+    can.position = transform.translation.y;
+    can.target_position = site.scroll.value;
 
-
-    //transform.translation.y += site.scroll.value;
-
-/*    for (mut transform, cube) in &mut cubes {
-        transform.rotate_y(cube.speed * TAU * timer.delta_seconds());
-
-        for ev in scroll_event.read() {
-            transform.rotate_x(0.01 * TAU * ev.0);
-        }
-    }*/
+    transform.rotation = Quat::from_euler(EulerRot::XYZ, transform.translation.y * -0.01, 0., -90_f32.to_radians());
 }
-
-fn scroll_animate(time: Res<Time>,
-                  mut site: ResMut<nws::site::Site>,
-                  mut query: Query<(&mut Transform, &Curve)>,
-                  mut gizmos: Gizmos) {
-    let t = (time.elapsed_seconds().sin() + 1.) / 2.;
-
-    for (mut transform, cubic_curve) in &mut query {
-        // Draw the curve
-        gizmos.linestrip(cubic_curve.0.iter_positions(50), WHITE);
-        // position takes a point from the curve where 0 is the initial point
-        // and 1 is the last point
-
-        //transform.translation = cubic_curve.0.position(site.scroll.step.abs() / 10.);
-    }
-}
-
 
 
 fn setup_animation(
@@ -296,4 +273,18 @@ fn update_shader(
     }
 
     //materials.get_mut(&can_entity.material).unwrap().extension.scroll = site.scroll.value;
+}
+
+
+fn smooth_update(
+    timer: Res<Time>,
+    mut query: Query<(&mut Transform, &CanEntity)>,
+) {
+    for (mut transform, can) in &mut query {
+        let speed = 0.2;
+        let ease = simple_easing::circ_in(speed);
+        transform.translation.y = can.position.lerp(can.target_position, ease);
+
+        transform.rotation = can.rotation.lerp(can.target_rotation, ease);
+    }
 }
