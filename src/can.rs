@@ -59,9 +59,12 @@ struct CanMaterial {
     _webgl2_padding: Vec2,
     #[texture(200)]
     #[sampler(201)]
-    can_texture0: Option<Handle<Image>>,
+    can_fingerpint: Option<Handle<Image>>,
     #[texture(202)]
     #[sampler(203)]
+    can_texture0: Option<Handle<Image>>,
+    #[texture(204)]
+    #[sampler(205)]
     can_texture1: Option<Handle<Image>>,
 }
 
@@ -132,11 +135,15 @@ fn setup(
             base: StandardMaterial {
                 base_color: LinearRgba::WHITE.into(),
                 base_color_texture: Some(asset_server.load("textures/can0.png")),
+                metallic: 0.8,
+                metallic_roughness_texture: Some(asset_server.load("textures/can_metal_specular.png")),
+                ior: 1450.,
                 ..Default::default()
             },
             extension: CanMaterial {
                 scroll: 0.,
                 page: 0.,
+                can_fingerpint: Some(asset_server.load("textures/can_finger.png")),
                 can_texture0: Some(asset_server.load("textures/can0.png")),
                 can_texture1: Some(asset_server.load("textures/can1.png")),
                 ..default()

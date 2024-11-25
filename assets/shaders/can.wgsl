@@ -15,11 +15,12 @@
 }
 #endif
 
-
-@group(2) @binding(200) var can_texture0: texture_2d<f32>;
-@group(2) @binding(201) var can_texture0_sampler: sampler;
-@group(2) @binding(202) var can_texture1: texture_2d<f32>;
-@group(2) @binding(203) var can_texture1_sampler: sampler;
+@group(2) @binding(200) var can_fingerprint: texture_2d<f32>;
+@group(2) @binding(201) var can_fingerprint_sampler: sampler;
+@group(2) @binding(202) var can_texture0: texture_2d<f32>;
+@group(2) @binding(203) var can_texture0_sampler: sampler;
+@group(2) @binding(204) var can_texture1: texture_2d<f32>;
+@group(2) @binding(205) var can_texture1_sampler: sampler;
 
 struct Parameters {
     scroll: f32,
@@ -41,8 +42,8 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     out.color = apply_pbr_lighting(pbr_input);
     out.color = main_pass_post_lighting_processing(pbr_input, out.color);
 
-
-    out.color = out.color * 1.;
+    var fingerprint = textureSample(can_fingerprint, can_fingerprint_sampler, in.uv);
+    out.color = mix(out.color , fingerprint, 0.05);
 
     return out;
 }
